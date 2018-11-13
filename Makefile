@@ -2,8 +2,6 @@ all: ps worker
 CC=g++
 TARGET = ps
 TARGET1 = worker
-TARGET2 = rworker_en
-TARGET3 = testMultiHop
 LIBS=-libverbs -lrdmacm -pthread -libverbs -lrdmacm
 CFLAGS=-Wall -g -fpermissive -std=c++11
 OBJS=ps.o 
