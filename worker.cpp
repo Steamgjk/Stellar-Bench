@@ -33,13 +33,9 @@
 #define CAP 2000
 
 
-#define TWO_SIDED_RDMA 0
 #define ONE_SIDED_RDMA 1
 
-#if TWO_SIDED_RDMA
-#include "rdma_two_sided_client_op.h"
-#include "rdma_two_sided_server_op.h"
-#endif
+
 
 #if ONE_SIDED_RDMA
 #include "client_rdma_op.h"
@@ -57,10 +53,7 @@ char* to_send_block_mem;
 char* to_recv_block_mem;
 #endif
 
-#if TWO_SIDED_RDMA
-struct client_context c_ctx[CAP];
-struct conn_context s_ctx[CAP];
-#endif
+
 
 //cnt=15454227 sizeof(long)=8
 //#define FILE_NAME "./netflix_row.txt"
@@ -217,11 +210,6 @@ void recvTd(int recv_thread_id);
 void rdma_sendTd(int send_thread_id);
 void rdma_recvTd(int recv_thread_id);
 
-#if TWO_SIDED_RDMA
-void rdma_sendTd_loop(int send_thread_id);
-void rdma_recvTd_loop(int recv_thread_id);
-void InitContext();
-#endif
 
 void submf();
 void WriteLog(Block&Pb, Block&Qb, int iter_cnt);
@@ -275,10 +263,7 @@ int main(int argc, const char * argv[])
     {
         int th_id = thread_id + i * WORKER_N_1;
         printf("recv th_id=%d\n", th_id );
-#if TWO_SIDED_RDMA
-        std::thread recv_loop_thread(rdma_recvTd_loop, th_id);
-        recv_loop_thread.detach();
-#endif
+
         std::thread recv_thread(rdma_recvTd, th_id);
         //std::thread recv_thread(recvTd, thread_id);
         recv_thread.detach();
@@ -292,10 +277,7 @@ int main(int argc, const char * argv[])
     for (int i = 0; i < QP_GROUP; i++)
     {
         int th_id = thread_id + i * WORKER_N_1;
-#if TWO_SIDED_RDMA
-        std::thread send_loop_thread(rdma_sendTd_loop, th_id);
-        send_loop_thread.detach();
-#endif
+
         std::thread send_thread(rdma_sendTd, th_id);
         //std::thread send_thread(sendTd, thread_id);
         send_thread.detach();
@@ -418,19 +400,7 @@ void InitFlag()
 }
 #endif
 
-#if TWO_SIDED_RDMA
-void InitContext()
-{
-    for (int i = 0; i < CAP; i++)
-    {
-        c_ctx[i].buf_prepared = false;
-        c_ctx[i].buf_registered = false;
-        s_ctx[i].buf_prepared = false;
-        s_ctx[i].buf_registered = false;
 
-    }
-}
-#endif
 void LoadRmatrix(int file_no, map<long, double>& myMap)
 {
     char fn[100];
@@ -1155,160 +1125,6 @@ void recvTd(int recv_thread_id)
     }
 }
 
-#if TWO_SIDED_RDMA
-
-void rdma_sendTd_loop(int send_thread_id)
-{
-    char* remote_ip = remote_ips[send_thread_id % WORKER_N_1];
-    int remote_port = remote_ports[send_thread_id];
-    int mapped_thread_id = send_thread_id / WORKER_N_1;
-    char str_port[100];
-    sprintf(str_port, "%d", remote_port);
-    RdmaTwoSidedClientOp ct;
-    ct.rc_client_loop(remote_ip, str_port, &(c_ctx[mapped_thread_id]));
-}
-
-void rdma_recvTd_loop(int recv_thread_id)
-{
-    int bind_port = local_ports[recv_thread_id];
-    char str_port[100];
-    sprintf(str_port, "%d", bind_port);
-    int mapped_thread_id = recv_thread_id / WORKER_N_1;
-    RdmaTwoSidedServerOp rtos;
-    rtos.rc_server_loop(str_port, &(s_ctx[mapped_thread_id]));
-
-}
-
-
-void rdma_sendTd(int send_thread_id)
-{
-
-    size_t struct_sz = sizeof(Block);
-    int mapped_thread_id = send_thread_id / WORKER_N_1;
-    while (c_ctx[mapped_thread_id].buf_registered == false)
-    {
-        //printf("[%d] has not registered buffer\n", send_thread_id);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-    printf("[%d] has registered send buffer\n", send_thread_id);
-    while (1 == 1)
-    {
-        //printf("canSend=%d\n", canSend );
-        if (canSend)
-        {
-            //struct timeval st, et, tspan;
-
-            printf("Td:%d cansend\n", thread_id );
-
-            size_t p_data_sz = sizeof(double) * Pblock.ele_num;
-            size_t q_data_sz = sizeof(double) * Qblock.ele_num;
-            size_t p_total = struct_sz + p_data_sz;
-            size_t q_total = struct_sz + q_data_sz;
-            size_t total_len = p_total + q_total;
-
-
-
-            char* buf = c_ctx[mapped_thread_id].buffer;
-
-            memcpy(buf, &(Pblock), struct_sz);
-            memcpy(buf + struct_sz, (char*) & (Pblock.eles[0]), p_data_sz);
-
-            memcpy(buf + p_total, &(Qblock), struct_sz);
-            memcpy(buf + p_total + struct_sz , (char*) & (Qblock.eles[0]), q_data_sz);
-
-
-
-            c_ctx[mapped_thread_id].buf_len = total_len;
-            c_ctx[mapped_thread_id].buf_prepared = true;
-
-            printf("[%d][%d] Marked send buf  p_total = %ld p_data_sz=%ld q_total=%ld q_data_sz=%ld total_len=%ld\n", send_thread_id, mapped_thread_id, p_total, p_data_sz, q_total, q_data_sz, total_len);
-
-            canSend = false;
-        }
-
-    }
-
-}
-
-void rdma_recvTd(int recv_thread_id)
-{
-
-    size_t struct_sz = sizeof(Block);
-
-    int mapped_thread_id = recv_thread_id / WORKER_N_1;
-    while (s_ctx[mapped_thread_id].buf_registered == false)
-    {
-        //printf("[%d] recv has not registered buffer\n", recv_thread_id);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-    printf("[%d] has registered receive buffer\n", recv_thread_id);
-    while (1 == 1)
-    {
-        if (mapped_thread_id != recv_round_robin_idx % QP_GROUP)
-        {
-            continue;
-        }
-        /*
-        struct timeval st, et;
-        gettimeofday(&st, 0);
-        */
-        if (s_ctx[mapped_thread_id].buf_prepared == false)
-        {
-            //printf("[%d] recv buf prepared = false\n", recv_thread_id );
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            continue;
-        }
-        //printf("[%d] recv buf prepared = true\n", recv_thread_id );
-
-        char* real_sta_buf = s_ctx[mapped_thread_id].buffer;
-
-        struct Block* pb = (struct Block*)(void*)real_sta_buf;
-        Pblock.block_id = pb->block_id;
-        Pblock.data_age = pb->data_age;
-        Pblock.sta_idx = pb->sta_idx;
-        Pblock.height = pb->height;
-        Pblock.ele_num = pb->ele_num;
-        Pblock.eles.resize(pb->ele_num);
-        double* data_eles = (double*)(void*) (real_sta_buf + struct_sz);
-        for (int i = 0; i < Pblock.ele_num; i++)
-        {
-            Pblock.eles[i] = data_eles[i];
-        }
-
-
-        size_t p_total = struct_sz + sizeof(double) * (pb->ele_num);
-        struct Block* qb = (struct Block*)(void*)(real_sta_buf + p_total);
-        Qblock.block_id = qb->block_id;
-        Qblock.data_age = qb->data_age;
-        Qblock.sta_idx = qb->sta_idx;
-        Qblock.height = qb->height;
-        Qblock.ele_num = qb-> ele_num;
-        Qblock.eles.resize(qb->ele_num);
-        //printf("[%d]get qblock id=%d  ele_num=%d  isP=%d qb=%p\n", recv_thread_id,  qb->block_id, qb->ele_num, qb->isP, qb);
-        //data_eles = (double*)(void*)(to_recv_block_mem + BLOCK_MEM_SZ + struct_sz);
-        data_eles = (double*)(void*)(real_sta_buf + p_total + struct_sz);
-        for (int i = 0; i < Qblock.ele_num; i++)
-        {
-            Qblock.eles[i] = data_eles[i];
-        }
-        /*
-        gettimeofday(&et, 0);
-        long long mksp = (et.tv_sec - st.tv_sec) * 1000000 + et.tv_usec - st.tv_usec;
-        printf("[%d]:recv two blocks time = %lld\n", recv_thread_id, mksp);
-        **/
-
-
-        //this buf I have read it, so please prepare new buf content
-        s_ctx[mapped_thread_id].buf_prepared = false;
-
-        printf("[%d]get pblock id=%d  ele_num=%d  qblock id=%d  ele_num=%d\n", recv_thread_id, pb->block_id, pb->ele_num, qb->block_id, qb->ele_num);
-
-        recv_round_robin_idx++;
-        hasRecved = true;
-    }
-
-}
-#endif
 
 
 #if ONE_SIDED_RDMA

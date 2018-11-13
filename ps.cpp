@@ -33,10 +33,6 @@
 #define TWO_SIDED_RDMA 0
 #define ONE_SIDED_RDMA 1
 
-#if TWO_SIDED_RDMA
-#include "rdma_two_sided_client_op.h"
-#include "rdma_two_sided_server_op.h"
-#endif
 
 #if ONE_SIDED_RDMA
 #include "server_rdma_op.h"
@@ -247,10 +243,6 @@ int main(int argc, const char * argv[])
             //std::thread recv_thread(recvTd, thid);
             //recv_thread.detach();
 
-#if TWO_SIDED_RDMA
-            std::thread recv_loop_thread(rdma_recvTd_loop, thid);
-            recv_loop_thread.detach();
-#endif
             std::thread recv_thread(rdma_recvTd, thid);
             recv_thread.detach();
 
@@ -269,10 +261,7 @@ int main(int argc, const char * argv[])
             //std::thread send_thread(sendTd, thid);
             //send_thread.detach();
 
-#if TWO_SIDED_RDMA
-            std::thread send_loop_thread(rdma_sendTd_loop, thid);
-            send_loop_thread.detach();
-#endif
+
             std::thread send_thread(rdma_sendTd, thid);
             send_thread.detach();
 
@@ -431,19 +420,7 @@ void InitFlag()
     }
 }
 #endif
-#if TWO_SIDED_RDMA
-void InitContext()
-{
-    for (int i = 0; i < CAP; i++)
-    {
-        c_ctx[i].buf_prepared = false;
-        c_ctx[i].buf_registered = false;
-        s_ctx[i].buf_prepared = false;
-        s_ctx[i].buf_registered = false;
 
-    }
-}
-#endif
 void WriteLog(Block & Pb, Block & Qb, int iter_cnt)
 {
     char fn[100];
@@ -748,156 +725,6 @@ void partitionQ(int portion_num,  Block * Qblocks)
     }
 
 }
-
-
-
-#if TWO_SIDED_RDMA
-void rdma_sendTd(int send_thread_id)
-{
-    int mapped_thread_id = send_thread_id % WORKER_NUM;
-    size_t struct_sz = sizeof(Block);
-    while (c_ctx[send_thread_id].buf_registered == false)
-    {
-        //printf("[%d] has not registered buffer\n", send_thread_id);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-    printf("[%d] has registered send buffer\n", send_thread_id);
-    while (1 == 1)
-    {
-        if ( send_round_robin_idx[mapped_thread_id] != send_thread_id || (canSend[mapped_thread_id] == false) )
-        {
-            //printf("canSend =%d\n", canSend[mapped_thread_id] );
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            continue;
-        }
-
-        //printf("iter_t=%d send_thread_id=%d mapped_thread_id=%d\n", iter_t, send_thread_id, mapped_thread_id );
-        if (canSend[mapped_thread_id] == true)
-        {
-            int pbid = worker_pidx[mapped_thread_id];
-            int qbid = worker_qidx[mapped_thread_id];
-            //printf("%d] canSend pbid=%d  qbid=%d sid=%d\n", send_thread_id, pbid, qbid, send_thread_id % WORKER_NUM );
-            size_t p_data_sz = sizeof(double) * Pblocks[pbid].eles.size();
-            size_t p_total = struct_sz + p_data_sz;
-            size_t q_data_sz = sizeof(double) * Qblocks[qbid].eles.size();
-            size_t q_total = struct_sz + q_data_sz;
-            size_t total_len = p_total + q_total;
-            char* real_sta_buf = c_ctx[send_thread_id].buffer;
-
-            memcpy(real_sta_buf, &(Pblocks[pbid]), struct_sz);
-            memcpy(real_sta_buf + struct_sz, (char*) & (Pblocks[pbid].eles[0]), p_data_sz );
-            memcpy(real_sta_buf + p_total, &(Qblocks[qbid]), struct_sz);
-            memcpy(real_sta_buf + p_total + struct_sz , (char*) & (Qblocks[qbid].eles[0]), q_data_sz);
-
-            //printf("[Td:%d] send success qbid=%d isP=%d  total_len=%ld qh=%d\n", send_thread_id, qbid, Qblocks[qbid].isP, total_len, Qblocks[qbid].height);
-
-            c_ctx[send_thread_id].buf_len = total_len;
-            c_ctx[send_thread_id].buf_prepared = true;
-
-            send_round_robin_idx[mapped_thread_id] = (send_round_robin_idx[mapped_thread_id] + WORKER_NUM) % (WORKER_NUM * QP_GROUP);
-            canSend[mapped_thread_id] = false;
-        }
-
-    }
-}
-
-void rdma_recvTd(int recv_thread_id)
-{
-    int mapped_thread_id = recv_thread_id % WORKER_NUM;
-    size_t struct_sz = sizeof(Block);
-    while (s_ctx[recv_thread_id].buf_registered == false)
-    {
-        //printf("[%d] recv has not registered buffer\n", recv_thread_id);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-    printf("[%d] has registered receive buffer\n", recv_thread_id);
-    while (1 == 1)
-    {
-        if (recv_round_robin_idx[mapped_thread_id] != recv_thread_id)
-        {
-            //printf("[%d] cazaizheli\n", recv_thread_id );
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            continue;
-        }
-        if (s_ctx[recv_thread_id].buf_prepared == false)
-        {
-            //printf("[%d] recv buf_prepared = false\n", recv_thread_id );
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            continue;
-        }
-        //printf("[%d] recv buf_prepared = true\n", recv_thread_id );
-
-        char* real_sta_buf = s_ctx[recv_thread_id].buffer;
-        struct Block * pb = (struct Block*)(void*)(real_sta_buf);
-        int block_idx = pb->block_id ;
-        Pblocks[block_idx].block_id = pb->block_id;
-        Pblocks[block_idx].sta_idx = pb->sta_idx;
-        Pblocks[block_idx].height = pb->height;
-        Pblocks[block_idx].ele_num = pb->ele_num;
-        Pblocks[block_idx].eles.resize(pb->ele_num);
-        Pblocks[block_idx].isP = pb->isP;
-        double*data_eles = (double*)(void*) (real_sta_buf + struct_sz);
-        for (int i = 0; i < pb->ele_num; i++)
-        {
-            Pblocks[block_idx].eles[i] = data_eles[i];
-        }
-
-        //printf("[%d]successful reve one Block id=%d data_ele=%d\n", recv_thread_id, pb->block_id, pb->ele_num);
-
-        size_t p_total = struct_sz + sizeof(double) * pb->ele_num;
-
-        struct Block * qb = (struct Block*)(void*)(real_sta_buf + p_total);
-
-        data_eles = (double*)(void*) (real_sta_buf + p_total + struct_sz);
-
-        block_idx = qb->block_id ;
-        Qblocks[block_idx].block_id = qb->block_id;
-        Qblocks[block_idx].sta_idx = qb->sta_idx;
-        Qblocks[block_idx].height = qb->height;
-        Qblocks[block_idx].ele_num = qb->ele_num;
-        Qblocks[block_idx].eles.resize(qb->ele_num);
-        Qblocks[block_idx].isP = qb->isP;
-        for (int i = 0; i < qb->ele_num; i++)
-        {
-            Qblocks[block_idx].eles[i] = data_eles[i];
-        }
-
-        //printf("[%d]successful recv another Block id=%d data_ele=%d\n", recv_thread_id, pb->block_id, pb->ele_num);
-
-        //this buf I have read it, so please prepare new buf content
-        s_ctx[recv_thread_id].buf_prepared = false;
-
-        //printf("[%d]get pid=%d qid=%d  buf_prepared=%d\n", recv_thread_id, pb->block_id, qb->block_id, s_ctx[recv_thread_id].buf_prepared);
-
-        recv_round_robin_idx[mapped_thread_id] = (recv_round_robin_idx[mapped_thread_id] + WORKER_NUM) % (WORKER_NUM * QP_GROUP);
-        recvCount++;
-    }
-}
-
-void rdma_sendTd_loop(int send_thread_id)
-{
-    int mapped_thread_id = send_thread_id % WORKER_NUM;
-    char* remote_ip = remote_ips[mapped_thread_id];
-    int remote_port = remote_ports[send_thread_id];
-    printf("send_thread_id=%d\n", send_thread_id);
-    char str_port[100];
-    sprintf(str_port, "%d", remote_port);
-    RdmaTwoSidedClientOp ct;
-    ct.rc_client_loop(remote_ip, str_port, &(c_ctx[send_thread_id]));
-}
-
-void rdma_recvTd_loop(int recv_thread_id)
-{
-    int bind_port =  local_ports[recv_thread_id];
-    char str_port[100];
-    sprintf(str_port, "%d", bind_port);
-    RdmaTwoSidedServerOp rtos;
-    rtos.rc_server_loop(str_port, &(s_ctx[recv_thread_id]));
-
-}
-#endif
-
-
 
 
 #if ONE_SIDED_RDMA
