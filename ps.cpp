@@ -291,9 +291,9 @@ void rdma_sendTd(int send_thread_id)
             int pbid = worker_pidx[send_thread_id];
             int qbid = worker_qidx[send_thread_id];
             //printf("%d] canSend pbid=%d  qbid=%d sid=%d\n", send_thread_id, pbid, qbid, send_thread_id % WORKER_NUM );
-            size_t p_data_sz = sizeof(double) * Pblocks[pbid].eles.size();
+            size_t p_data_sz = sizeof(double) * Pblocks[pbid].ele_num;
             size_t p_total = struct_sz + p_data_sz;
-            size_t q_data_sz = sizeof(double) * Qblocks[qbid].eles.size();
+            size_t q_data_sz = sizeof(double) * Qblocks[qbid].ele_num;
             size_t q_total = struct_sz + q_data_sz;
             size_t total_len = p_total + q_total;
             char* real_sta_buf = c_ctx[send_thread_id].buffer;
