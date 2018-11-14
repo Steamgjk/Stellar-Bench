@@ -485,7 +485,7 @@ int wait4connection(char*local_ip, int local_port)
 
 void rdma_sendTd_loop(int send_thread_id)
 {
-    char* remote_ip = remote_ips[send_thread_id % WORKER_N_1];
+    char* remote_ip = remote_ips[send_thread_id];
     int remote_port = remote_ports[send_thread_id];
     char str_port[100];
     sprintf(str_port, "%d", remote_port);
