@@ -487,11 +487,10 @@ void rdma_sendTd_loop(int send_thread_id)
 {
     char* remote_ip = remote_ips[send_thread_id % WORKER_N_1];
     int remote_port = remote_ports[send_thread_id];
-    int mapped_thread_id = send_thread_id / WORKER_N_1;
     char str_port[100];
     sprintf(str_port, "%d", remote_port);
     RdmaTwoSidedClientOp ct;
-    ct.rc_client_loop(remote_ip, str_port, &(c_ctx[mapped_thread_id]));
+    ct.rc_client_loop(remote_ip, str_port, &(c_ctx[send_thread_id]));
 }
 
 void rdma_recvTd_loop(int recv_thread_id)
@@ -499,9 +498,8 @@ void rdma_recvTd_loop(int recv_thread_id)
     int bind_port = local_ports[recv_thread_id];
     char str_port[100];
     sprintf(str_port, "%d", bind_port);
-    int mapped_thread_id = recv_thread_id / WORKER_N_1;
     RdmaTwoSidedServerOp rtos;
-    rtos.rc_server_loop(str_port, &(s_ctx[mapped_thread_id]));
+    rtos.rc_server_loop(str_port, &(s_ctx[recv_thread_id]));
 
 }
 
@@ -548,10 +546,8 @@ void rdma_sendTd(int send_thread_id)
 
 void rdma_recvTd(int recv_thread_id)
 {
-
     size_t struct_sz = sizeof(Block);
-    int mapped_thread_id = recv_thread_id / WORKER_N_1;
-    while (s_ctx[mapped_thread_id].buf_registered == false)
+    while (s_ctx[recv_thread_id].buf_registered == false)
     {
         //printf("[%d] recv has not registered buffer\n", recv_thread_id);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -560,14 +556,14 @@ void rdma_recvTd(int recv_thread_id)
     while (1 == 1)
     {
 
-        if (s_ctx[mapped_thread_id].buf_prepared == false)
+        if (s_ctx[recv_thread_id].buf_prepared == false)
         {
             //printf("[%d] recv buf prepared = false\n", recv_thread_id );
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
 
-        char* real_sta_buf = s_ctx[mapped_thread_id].buffer;
+        char* real_sta_buf = s_ctx[recv_thread_id].buffer;
 
         struct Block* pb = (struct Block*)(void*)real_sta_buf;
         Pblock.block_id = pb->block_id;
