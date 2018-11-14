@@ -39,7 +39,7 @@ struct Block
 		printf("block_id  %d\n", block_id);
 		printf("data_age  %d\n", data_age);
 		printf("ele_num  %d\n", ele_num);
-		for (int i = 0; i < eles.size(); i++)
+		for (int i = 0; i < ele_num; i++)
 		{
 			printf("%lf\t", eles[i]);
 		}
