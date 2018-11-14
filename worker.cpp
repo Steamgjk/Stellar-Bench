@@ -31,62 +31,21 @@
 #include <map>
 
 #define CAP 2000
-
-
 #define TWO_SIDED_RDMA 1
-#define ONE_SIDED_RDMA 0
 
 #if TWO_SIDED_RDMA
 #include "rdma_two_sided_client_op.h"
 #include "rdma_two_sided_server_op.h"
 #endif
 
-#if ONE_SIDED_RDMA
-#include "client_rdma_op.h"
-#include "server_rdma_op.h"
-#endif
-
 using namespace std;
 #define GROUP_NUM 1
 #define DIM_NUM 4
-
-#if ONE_SIDED_RDMA
-#define BLOCK_MEM_SZ (250000000)
-#define MEM_SIZE (BLOCK_MEM_SZ*2)
-char* to_send_block_mem;
-char* to_recv_block_mem;
-#endif
 
 #if TWO_SIDED_RDMA
 struct client_context c_ctx[CAP];
 struct conn_context s_ctx[CAP];
 #endif
-
-//cnt=15454227 sizeof(long)=8
-//#define FILE_NAME "./netflix_row.txt"
-//#define TEST_NAME "./test_out.txt"
-//#define N  17770 // row number
-//#define M  2649429 //col number
-//#define K  40 //主题个数
-
-//#define FILE_NAME "./movielen10M_train.txt"
-//#define TEST_NAME "./movielen10M_test.txt"
-
-/*
-#define FILE_NAME "./mdata/traina-"
-#define TEST_NAME "./mdata/testa-"
-#define N 71567
-#define M 65133
-#define K  40 //主题个数
-**/
-/*
-#define FILE_NAME "./data/TrainingMap-"
-#define TEST_NAME "./data/TestMap-"
-#define N 1000000
-#define M 1000000
-#define K  100 //主题个数
-**/
-
 
 #define FILE_NAME "./yahoo-output/train-"
 #define TEST_NAME "./yahoo-output/test"
@@ -94,24 +53,9 @@ struct conn_context s_ctx[CAP];
 #define M 624961
 #define K  100 //主题个数
 
-
-/**Movie-Len**/
-/*
-double yita = 0.003;
-double theta = 0.01;
-**/
-
-/* Jumbo **/
-/*
-double yita = 0.002;
-double theta = 0.05;
-**/
-
 /**Yahoo!Music**/
 double yita = 0.001;
 double theta = 0.05;
-
-
 #define CAP 500
 #define WORKER_NUM 1
 #define WORKER_N_1 4
@@ -239,8 +183,6 @@ vector<bool> StartCalcUpdt;
 map<long, double> RMap;
 map<long, double> RMaps[8][8];
 
-
-
 std::vector<long> hash_for_row_threads[10][10][WORKER_THREAD_NUM];
 std::vector<double> rates_for_row_threads[10][10][WORKER_THREAD_NUM];
 std::vector<long> hash_for_col_threads[10][10][WORKER_THREAD_NUM];
@@ -260,12 +202,6 @@ int main(int argc, const char * argv[])
     }
     int thresh_log = 1200;
     thread_id = atoi(argv[1]);
-#if ONE_SIDED_RDMA
-    to_send_block_mem = (void*)malloc(MEM_SIZE);
-    to_recv_block_mem = (void*)malloc(MEM_SIZE);
-    InitFlag();
-    printf("to_send_block_mem=%p  to_recv_block_mem=%p\n", to_send_block_mem, to_recv_block_mem );
-#endif
 
     if (argc >= 3)
     {
@@ -301,8 +237,6 @@ int main(int argc, const char * argv[])
         //std::thread send_thread(sendTd, thread_id);
         send_thread.detach();
     }
-
-
 
     StartCalcUpdt.resize(WORKER_THREAD_NUM);
     for (int i = 0; i < WORKER_THREAD_NUM; i++)
@@ -409,15 +343,7 @@ int main(int argc, const char * argv[])
 
 
 }
-#if ONE_SIDED_RDMA
-void InitFlag()
-{
-    int* pb = (int*)(void*)(to_recv_block_mem);
-    *pb = -1;
-    pb = (int*)(void*)(to_recv_block_mem + BLOCK_MEM_SZ);
-    *pb = -1;
-}
-#endif
+
 
 #if TWO_SIDED_RDMA
 void InitContext()
@@ -923,238 +849,6 @@ int wait4connection(char*local_ip, int local_port)
 }
 
 
-void sendTd(int send_thread_id)
-{
-    printf("send_thread_id=%d\n", send_thread_id);
-    char* remote_ip = remote_ips[send_thread_id];
-    int remote_port = remote_ports[send_thread_id];
-    int fd;
-    int check_ret;
-    fd = socket(PF_INET, SOCK_STREAM , 0);
-    assert(fd >= 0);
-
-    struct sockaddr_in address;
-    bzero(&address, sizeof(address));
-    //转换成网络地址
-    address.sin_port = htons(remote_port);
-    address.sin_family = AF_INET;
-    //地址转换
-    inet_pton(AF_INET, remote_ip, &address.sin_addr);
-    do
-    {
-        check_ret = connect(fd, (struct sockaddr*) &address, sizeof(address));
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-    while (check_ret < 0);
-    assert(check_ret >= 0);
-    //发送数据
-    printf("connect to %s %d\n", remote_ip, remote_port);
-    while (1 == 1)
-    {
-        //printf("canSend=%d\n", canSend );
-        if (canSend)
-        {
-            printf("Td:%d cansend\n", thread_id );
-            size_t struct_sz = sizeof(Block);
-            size_t data_sz = sizeof(double) * Pblock.ele_num;
-            char* buf = (char*)malloc(struct_sz + data_sz);
-            memcpy(buf, &(Pblock), struct_sz);
-            memcpy(buf + struct_sz, (char*) & (Pblock.eles[0]), data_sz);
-
-            size_t total_len = struct_sz + data_sz;
-            printf("total_len=%ld struct_sz=%ld data_sz=%ld  elenum=%d\n", total_len, struct_sz, data_sz, Pblock.ele_num );
-            struct timeval st, et, tspan;
-            size_t sent_len = 0;
-            size_t remain_len = total_len;
-            int ret = -1;
-            size_t to_send_len = 4096;
-            //gettimeofday(&st, 0);
-
-
-            while (remain_len > 0)
-            {
-                if (to_send_len > remain_len)
-                {
-                    to_send_len = remain_len;
-                }
-                //printf("sending...\n");
-                ret = send(fd, buf + sent_len, to_send_len, 0);
-                if (ret >= 0)
-                {
-                    remain_len -= to_send_len;
-                    sent_len += to_send_len;
-                    //printf("remain_len = %ld\n", remain_len);
-                }
-                else
-                {
-                    printf("still fail\n");
-                }
-                //getchar();
-            }
-            free(buf);
-
-
-            data_sz = sizeof(double) * Qblock.ele_num;
-            total_len = struct_sz + data_sz;
-            buf = (char*)malloc(struct_sz + data_sz);
-            memcpy(buf, &(Qblock), struct_sz);
-            memcpy(buf + struct_sz , (char*) & (Qblock.eles[0]), data_sz);
-            printf("Q  total_len=%ld struct_sz=%ld data_sz=%ld ele_num=%d\n", total_len, struct_sz, data_sz, Qblock.ele_num );
-            sent_len = 0;
-            remain_len = total_len;
-            ret = -1;
-            to_send_len = 4096;
-            while (remain_len > 0)
-            {
-                if (to_send_len > remain_len)
-                {
-                    to_send_len = remain_len;
-                }
-                //printf("sending...\n");
-                ret = send(fd, buf + sent_len, to_send_len, 0);
-                if (ret >= 0)
-                {
-                    remain_len -= to_send_len;
-                    sent_len += to_send_len;
-                }
-                else
-                {
-                    printf("still fail\n");
-                }
-            }
-
-            free(buf);
-            /*
-            gettimeofday(&et, 0);
-            long long mksp = (et.tv_sec - st.tv_sec) * 1000000 + et.tv_usec - st.tv_usec;
-            printf("send two blocks mksp=%lld\n", mksp );
-            **/
-            canSend = false;
-        }
-        else
-        {
-            //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        }
-    }
-
-}
-
-void recvTd(int recv_thread_id)
-{
-    printf("recv_thread_id=%d\n", recv_thread_id);
-    int connfd = wait4connection(local_ips[recv_thread_id], local_ports[recv_thread_id] );
-
-    printf("[Td:%d] worker get connection\n", recv_thread_id);
-    while (1 == 1)
-    {
-        //printf("recv loop\n");
-        struct timeval st, et;
-
-        gettimeofday(&st, 0);
-
-        size_t expected_len = sizeof(Pblock);
-        char* sockBuf = (char*)malloc(expected_len + 100);
-        size_t cur_len = 0;
-        int ret = 0;
-        while (cur_len < expected_len)
-        {
-            //printf("recving..\n");
-            ret = recv(connfd, sockBuf + cur_len, expected_len - cur_len, 0);
-            //printf("check 1.5\n");
-            if (ret < 0)
-            {
-                printf("Mimatch!\n");
-            }
-            cur_len += ret;
-        }
-        struct Block* pb = (struct Block*)(void*)sockBuf;
-        Pblock.block_id = pb->block_id;
-        Pblock.data_age = pb->data_age;
-        Pblock.sta_idx = pb->sta_idx;
-        Pblock.height = pb->height;
-        Pblock.ele_num = pb->ele_num;
-        Pblock.eles.resize(pb->ele_num);
-        size_t data_sz = sizeof(double) * (Pblock.ele_num);
-        sockBuf = (char*)malloc(data_sz);
-        cur_len = 0;
-        ret = 0;
-        while (cur_len < data_sz)
-        {
-            //printf("recving 2\n");
-            ret = recv(connfd, sockBuf + cur_len, data_sz - cur_len, 0);
-            if (ret < 0)
-            {
-                printf("Mimatch!\n");
-            }
-            cur_len += ret;
-        }
-        //printf("check 5\n");
-        double* data_eles = (double*)(void*)sockBuf;
-        for (int i = 0; i < Pblock.ele_num; i++)
-        {
-            Pblock.eles[i] = data_eles[i];
-            //if (Pblock.eles[i] > 100 || Pblock.eles[i] < -100 )
-            {
-                // printf("P Exception!\n");
-            }
-        }
-        free(data_eles);
-
-        expected_len = sizeof(Pblock);
-        sockBuf = (char*)malloc(expected_len);
-        cur_len = 0;
-        ret = 0;
-        while (cur_len < expected_len)
-        {
-            ret = recv(connfd, sockBuf + cur_len, expected_len - cur_len, 0);
-            if (ret < 0)
-            {
-                printf("Mimatch!\n");
-            }
-            cur_len += ret;
-        }
-        struct Block* qb = (struct Block*)(void*)sockBuf;
-        Qblock.block_id = qb->block_id;
-        Qblock.data_age = qb->data_age;
-        Qblock.sta_idx = qb->sta_idx;
-        Qblock.height = qb->height;
-        Qblock.ele_num = qb-> ele_num;
-        Qblock.eles.resize(qb->ele_num);
-        printf("recv pele %d qele %d\n", Pblock.ele_num, Qblock.ele_num );
-        free(sockBuf);
-
-        data_sz = sizeof(double) * (Qblock.ele_num);
-        sockBuf = (char*)malloc(data_sz);
-        cur_len = 0;
-        ret = 0;
-        while (cur_len < data_sz)
-        {
-            ret = recv(connfd, sockBuf + cur_len, data_sz - cur_len, 0);
-            if (ret < 0)
-            {
-                printf("Mimatch!\n");
-            }
-            cur_len += ret;
-        }
-
-        data_eles = (double*)(void*)sockBuf;
-        for (int i = 0; i < Qblock.ele_num; i++)
-        {
-            Qblock.eles[i] = data_eles[i];
-            //if (Qblock.eles[i] > 100 || Qblock.eles[i] < -100 )
-            {
-                //  printf("Q Exception!\n");
-            }
-        }
-        free(data_eles);
-
-        gettimeofday(&et, 0);
-        long long mksp = (et.tv_sec - st.tv_sec) * 1000000 + et.tv_usec - st.tv_usec;
-        printf("recv two blocks time = %lld\n", mksp);
-
-        hasRecved = true;
-    }
-}
 
 #if TWO_SIDED_RDMA
 
@@ -1308,240 +1002,5 @@ void rdma_recvTd(int recv_thread_id)
         hasRecved = true;
     }
 
-}
-#endif
-
-
-#if ONE_SIDED_RDMA
-void rdma_sendTd(int send_thread_id)
-{
-    printf("[%d] worker send waiting for 3s...\n", send_thread_id);
-    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-    char* remote_ip = remote_ips[send_thread_id % WORKER_N_1];
-    int remote_port = remote_ports[send_thread_id];
-
-    struct sockaddr_in server_sockaddr;
-    int ret, option;
-    bzero(&server_sockaddr, sizeof server_sockaddr);
-    server_sockaddr.sin_family = AF_INET;
-    server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-
-    get_addr(remote_ip, (struct sockaddr*) &server_sockaddr);
-    server_sockaddr.sin_port = htons(remote_port);
-
-    client_rdma_op cro;
-    ret = cro.client_prepare_connection(&server_sockaddr);
-    if (ret)
-    {
-        rdma_error("Failed to setup client connection , ret = %d \n", ret);
-        return ret;
-    }
-    ret = cro.client_pre_post_recv_buffer();
-    if (ret)
-    {
-        rdma_error("Failed to setup client connection , ret = %d \n", ret);
-        return ret;
-    }
-    ret = cro.client_connect_to_server();
-    if (ret)
-    {
-        rdma_error("Failed to setup client connection , ret = %d \n", ret);
-        return ret;
-    }
-
-    ret = cro.client_send_metadata_to_server1(to_send_block_mem, MEM_SIZE);
-    if (ret)
-    {
-        rdma_error("Failed to setup client connection , ret = %d \n", ret);
-        return ret;
-    }
-
-    char*buf = NULL;
-    int time_stp = send_thread_id;
-    while (1 == 1)
-    {
-        if (send_thread_id / WORKER_N_1 != send_round_robin_idx % QP_GROUP)
-        {
-            continue;
-        }
-        int real_total = 0;
-        size_t p_total = 0;
-        size_t q_total = 0;
-        size_t struct_sz = sizeof( Block);
-        size_t p_data_sz = 0;
-        size_t q_data_sz = 0;
-        int total_len = 0;
-        int check_sum = 0;
-        struct timeval st, et, tspan;
-        int*flag = (int*)(void*) to_send_block_mem;
-        char* real_sta_buf = to_send_block_mem + sizeof(int);
-        if (canSend)
-        {
-
-            buf = to_send_block_mem;
-            //printf("[%d] canSend\n", send_thread_id );
-            p_data_sz = sizeof(double) * Pblock.ele_num;
-            q_data_sz = sizeof(double) * Qblock.ele_num;
-            p_total = struct_sz + p_data_sz;
-            q_total = struct_sz + q_data_sz;
-            total_len = p_total + q_total;
-            real_total = total_len + sizeof(int) + sizeof(int) + sizeof(int);
-            char* real_sta_buf = buf + sizeof(int) + sizeof(int);
-
-            memcpy(buf, &time_stp, sizeof(int));
-            memcpy(buf + sizeof(int), &total_len, sizeof(int));
-            //printf("2  flagp=%p bufp=%p val=%d %d  [%d]\n", flag, buf, (*flag), *((int*)(void*)buf), total_len );
-            memcpy(real_sta_buf, &(Pblock), struct_sz);
-            memcpy(real_sta_buf + struct_sz, (char*) & (Pblock.eles[0]), p_data_sz);
-            memcpy(real_sta_buf + p_total, &(Qblock), struct_sz);
-            memcpy(real_sta_buf + p_total + struct_sz , (char*) & (Qblock.eles[0]), q_data_sz);
-            memcpy(real_sta_buf + total_len, &time_stp, sizeof(int));
-
-            //int* tmp = (int*)(void*)buf;
-            //printf("head =%d  %d\n", *((int*)(void*)buf), (*tmp) );
-
-            *flag  = time_stp;
-            ret = cro.start_remote_write(real_total, 0);
-            //printf("[%d]:writer another block success real_total=%ld\n", send_thread_id, real_total);
-            canSend = false;
-            int cnt = 0;
-            send_round_robin_idx++;
-
-
-            long time_interval = 10;
-            while (canSend == false)
-            {
-                ret = cro.start_remote_write(sizeof(int) + sizeof(int), 0);
-                cnt++;
-                //int*fla = (int*)(void*)buf;
-                //int*total_l = (int*)(void*)(buf + sizeof(int));
-                //printf("[%d]:resend one fla=%d  total_l=%d\n", send_thread_id, (*fla), (*total_l));
-                if (cnt > 10)
-                {
-                    break;
-                }
-                std::this_thread::sleep_for(std::chrono::milliseconds(time_interval));
-                time_interval = (time_interval << 1);
-                if (time_interval >= 500)
-                {
-                    time_interval = 500;
-                }
-                //printf("[%d] may be can jumb\n", send_thread_id );
-
-            }
-
-            time_stp += WORKER_N_1 * QP_GROUP ;
-
-
-
-        }
-    }
-
-}
-void rdma_recvTd(int recv_thread_id)
-{
-    int mapped_thread_id = recv_thread_id % WORKER_N_1;
-    printf("rdma_recv thread_id = %d\n local_ip-11=%s  local_port-11=%d\n", recv_thread_id, local_ips[mapped_thread_id], local_ports[recv_thread_id]);
-    server_rdma_op sro;
-    int ret = sro.rdma_server_init(local_ips[mapped_thread_id], local_ports[recv_thread_id], to_recv_block_mem, MEM_SIZE);
-
-    printf("rdma_recvTd:rdma_server_init...\n");
-    int*flag = (int*)(void*)to_recv_block_mem;
-    char*buf = to_recv_block_mem;
-    size_t struct_sz = sizeof(Block);
-    int time_stp = recv_thread_id;
-    while (1 == 1)
-    {
-        if (recv_thread_id / WORKER_N_1 != recv_round_robin_idx % QP_GROUP)
-        {
-            continue;
-        }
-        /*
-        struct timeval st, et;
-        gettimeofday(&st, 0);
-        */
-
-
-        int* total_len_ptr = (int*)(void*)(buf + sizeof(int));
-        char* real_sta_buf = buf + sizeof(int) + sizeof(int);
-        int* tail_total_len_ptr = NULL;
-
-        while (1 == 1)
-        {
-            if ((*flag) != time_stp)
-            {
-                //std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                continue;
-            }
-            //printf("[%d] flag= %d\n", recv_thread_id, (*flag) );
-            if ((*total_len_ptr) <= 0)
-            {
-                //std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                continue;
-            }
-            int total_len = *total_len_ptr;
-            tail_total_len_ptr = (int*)(void*)(real_sta_buf + total_len);
-            if ((*tail_total_len_ptr) != time_stp)
-            {
-                //std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                continue;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        struct Block* pb = (struct Block*)(void*)real_sta_buf;
-        Pblock.block_id = pb->block_id;
-        Pblock.data_age = pb->data_age;
-        Pblock.sta_idx = pb->sta_idx;
-        Pblock.height = pb->height;
-        Pblock.ele_num = pb->ele_num;
-        Pblock.eles.resize(pb->ele_num);
-        double* data_eles = (double*)(void*) (real_sta_buf + struct_sz);
-        for (int i = 0; i < Pblock.ele_num; i++)
-        {
-            Pblock.eles[i] = data_eles[i];
-            //if (Pblock.eles[i] > 100 || Pblock.eles[i] < -100 )
-            {
-                //  printf("P Exception!\n");
-            }
-        }
-        //printf("[%d]get pblock id=%d  ele_num=%d  isP=%d pb=%p\n", recv_thread_id,  pb->block_id, pb->ele_num, pb->isP, pb);
-
-        size_t p_total = struct_sz + sizeof(double) * (pb->ele_num);
-
-        struct Block* qb = (struct Block*)(void*)(real_sta_buf + p_total);
-
-        Qblock.block_id = qb->block_id;
-        Qblock.data_age = qb->data_age;
-        Qblock.sta_idx = qb->sta_idx;
-        Qblock.height = qb->height;
-        Qblock.ele_num = qb-> ele_num;
-        Qblock.eles.resize(qb->ele_num);
-        //printf("[%d]get qblock id=%d  ele_num=%d  isP=%d qb=%p\n", recv_thread_id,  qb->block_id, qb->ele_num, qb->isP, qb);
-        //data_eles = (double*)(void*)(to_recv_block_mem + BLOCK_MEM_SZ + struct_sz);
-        data_eles = (double*)(void*)(real_sta_buf + p_total + struct_sz);
-        for (int i = 0; i < Qblock.ele_num; i++)
-        {
-            Qblock.eles[i] = data_eles[i];
-        }
-
-        //*flag = -1;
-        //*total_len_ptr = -3;
-        //*tail_total_len_ptr = -2;
-        time_stp += WORKER_N_1 * QP_GROUP;
-        /*
-        gettimeofday(&et, 0);
-        long long mksp = (et.tv_sec - st.tv_sec) * 1000000 + et.tv_usec - st.tv_usec;
-        printf("[%d]:recv two blocks time = %lld\n", recv_thread_id, mksp);
-        **/
-
-        recv_round_robin_idx++;
-        hasRecved = true;
-
-
-    }
 }
 #endif
