@@ -176,8 +176,8 @@ int main(int argc, const char * argv[])
             //printf("before submf\n");
             submf();
             //printf("after submf\n");
-            completed_iter = iter_cnt;
-            iter_cnt++;
+            completed_iter = iter_t;
+            iter_t++;
         }
     }
 
