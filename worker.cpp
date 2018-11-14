@@ -29,7 +29,7 @@
 #include <fstream>
 #include <sys/time.h>
 #include <map>
-
+#include "mf_common.h"
 #define CAP 2000
 #include "rdma_two_sided_client_op.h"
 #include "rdma_two_sided_server_op.h"
@@ -66,74 +66,6 @@ int recv_round_robin_idx = 0;
 #define SEQ_LEN 5000
 #define WORKER_THREAD_NUM 30
 
-struct Block
-{
-    int block_id;
-    int data_age;
-    int sta_idx;
-    int height; //height
-    int ele_num;
-    bool isP;
-    vector<double> eles;
-    Block()
-    {
-
-    }
-    Block operator=(Block& bitem)
-    {
-        block_id = bitem.block_id;
-        data_age = bitem.data_age;
-        height = bitem.height;
-        eles = bitem.eles;
-        ele_num = bitem.ele_num;
-        sta_idx = bitem.sta_idx;
-        return *this;
-    }
-    void printBlock()
-    {
-
-        printf("block_id  %d\n", block_id);
-        printf("data_age  %d\n", data_age);
-        printf("ele_num  %d\n", ele_num);
-        for (int i = 0; i < eles.size(); i++)
-        {
-            printf("%lf\t", eles[i]);
-        }
-        printf("\n");
-
-    }
-};
-struct Updates
-{
-    int block_id;
-    int clock_t;
-    int ele_num;
-    vector<double> eles;
-    Updates()
-    {
-
-    }
-    Updates operator=(Updates& uitem)
-    {
-        block_id = uitem.block_id;
-        clock_t = uitem.clock_t;
-        ele_num = uitem.ele_num;
-        eles = uitem.eles;
-        return *this;
-    }
-
-    void printUpdates()
-    {
-        printf("update block_id %d\n", block_id );
-        printf("clock_t  %d\n", clock_t);
-        printf("ele size %ld\n", ele_num);
-        for (int i = 0; i < eles.size(); i++)
-        {
-            printf("%lf\t", eles[i]);
-        }
-        printf("\n");
-    }
-};
 struct Block Pblock;
 struct Block Qblock;
 struct Updates Pupdt;
