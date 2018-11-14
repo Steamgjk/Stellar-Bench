@@ -54,13 +54,13 @@ using namespace std;
 #define FILE_NAME "./movielen10M_train.txt"
 #define TEST_NAME "./movielen10M_test.txt"
 
-/*
+
 #define FILE_NAME "./mdata/traina-"
 #define TEST_NAME "./mdata/testa-"
 #define N 71567
 #define M 65133
 #define K  40 //主题个数
-**/
+
 
 /*Jumbo **/
 /*
@@ -71,13 +71,13 @@ using namespace std;
 #define K  100 //主题个数
 **/
 /**Yahoo!Music **/
-/*
+
 #define FILE_NAME "./yahoo-output/train-"
 #define TEST_NAME "./yahoo-output/test"
 #define N 1000990
 #define M 624961
 #define K  100 //主题个数
-**/
+
 
 
 #if ONE_SIDED_RDMA
