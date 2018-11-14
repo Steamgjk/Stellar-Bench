@@ -144,7 +144,7 @@ int main(int argc, const char * argv[])
     memset(&stop, 0, sizeof(struct timeval));
     memset(&diff, 0, sizeof(struct timeval));
 
-    iter_cnt = 0;
+    iter_t = 0;
     calc_time = 0;
     bool isstart = false;
     std::vector<thread> td_vec;
