@@ -1,6 +1,13 @@
 #ifndef MF_COMMON_H
 #define MF_COMMON_H
 
+#define FILE_NAME "./yahoo-output/train-"
+#define TEST_NAME "./yahoo-output/test"
+#define N 1000990
+#define M 624961
+#define K  100 //主题个数
+#define CAP 2000
+#define QP_GROUP 1
 
 struct Block
 {
@@ -10,7 +17,7 @@ struct Block
 	int height; //height
 	int ele_num;
 	bool isP;
-	vector<double> eles;
+	double* eles;
 	Block()
 	{
 
@@ -39,37 +46,7 @@ struct Block
 
 	}
 };
-struct Updates
-{
-	int block_id;
-	int clock_t;
-	int ele_num;
-	vector<double> eles;
-	Updates()
-	{
 
-	}
-	Updates operator=(Updates& uitem)
-	{
-		block_id = uitem.block_id;
-		clock_t = uitem.clock_t;
-		ele_num = uitem.ele_num;
-		eles = uitem.eles;
-		return *this;
-	}
-
-	void printUpdates()
-	{
-		printf("update block_id %d\n", block_id );
-		printf("clock_t  %d\n", clock_t);
-		printf("ele size %ld\n", ele_num);
-		for (int i = 0; i < eles.size(); i++)
-		{
-			printf("%lf\t", eles[i]);
-		}
-		printf("\n");
-	}
-};
 
 
 

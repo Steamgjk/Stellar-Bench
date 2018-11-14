@@ -29,24 +29,14 @@
 #include <sys/time.h>
 #include <map>
 #include "mf_common.h"
-
 #include "rdma_two_sided_client_op.h"
 #include "rdma_two_sided_server_op.h"
-
-
 using namespace std;
-#define CAP 2000
 
-#define FILE_NAME "./yahoo-output/train-"
-#define TEST_NAME "./yahoo-output/test"
-#define N 1000990
-#define M 624961
-#define K  100 //主题个数
+
 
 struct client_context c_ctx[CAP];
 struct conn_context s_ctx[CAP];
-
-#define QP_GROUP 1
 int send_round_robin_idx[CAP];
 int recv_round_robin_idx[CAP];
 
@@ -55,13 +45,9 @@ char* local_ips[CAP] = {"12.12.10.18", "12.12.10.18", "12.12.10.18", "12.12.10.1
 int local_ports[CAP] = {4411, 4412, 4413, 4414};
 char* remote_ips[CAP] = {"12.12.10.12", "12.12.10.15", "12.12.10.19", "12.12.10.17"};
 int remote_ports[CAP] = {5511, 5512, 5513, 5514};
-
-
-
 struct Block Pblocks[CAP];
 struct Block Qblocks[CAP];
-struct Updates Pupdts[CAP];
-struct Updates Qupdts[CAP];
+
 
 
 void WriteLog(Block&Pb, Block&Qb, int iter_cnt);

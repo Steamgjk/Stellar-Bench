@@ -30,10 +30,8 @@
 #include <sys/time.h>
 #include <map>
 #include "mf_common.h"
-#define CAP 2000
 #include "rdma_two_sided_client_op.h"
 #include "rdma_two_sided_server_op.h"
-
 using namespace std;
 #define GROUP_NUM 1
 #define DIM_NUM 4
@@ -41,18 +39,12 @@ using namespace std;
 struct client_context c_ctx[CAP];
 struct conn_context s_ctx[CAP];
 
-#define FILE_NAME "./yahoo-output/train-"
-#define TEST_NAME "./yahoo-output/test"
-#define N 1000990
-#define M 624961
-#define K  100 //主题个数
-
 /**Yahoo!Music**/
 double yita = 0.001;
 double theta = 0.05;
 #define WORKER_NUM 1
 #define WORKER_N_1 4
-#define QP_GROUP 1
+
 
 char* remote_ips[CAP] = {"12.12.10.18", "12.12.10.18", "12.12.10.18", "12.12.10.18"};
 int remote_ports[CAP] = {4411, 4412, 4413, 4414};
@@ -68,8 +60,6 @@ int recv_round_robin_idx = 0;
 
 struct Block Pblock;
 struct Block Qblock;
-struct Updates Pupdt;
-struct Updates Qupdt;
 vector<double> oldP;
 vector<double> oldQ;
 vector<long> hash_ids;
