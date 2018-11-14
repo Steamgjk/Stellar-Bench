@@ -8,6 +8,7 @@
 #define K  100 //主题个数
 #define CAP 2000
 #define QP_GROUP 1
+#define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
 struct Block
 {

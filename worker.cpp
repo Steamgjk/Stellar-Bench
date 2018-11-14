@@ -42,18 +42,19 @@ struct conn_context s_ctx[CAP];
 /**Yahoo!Music**/
 double yita = 0.001;
 double theta = 0.05;
-#define WORKER_NUM 1
-#define WORKER_N_1 4
 
 
+/*
 char* remote_ips[CAP] = {"12.12.10.18", "12.12.10.18", "12.12.10.18", "12.12.10.18"};
 int remote_ports[CAP] = {4411, 4412, 4413, 4414};
-
 char* local_ips[CAP] = {"12.12.10.12", "12.12.10.15", "12.12.10.19", "12.12.10.17"};
 int local_ports[CAP] = {5511, 5512, 5513, 5514};
+**/
+char* local_ips[CAP] = {"127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1"};
+int remote_ports[CAP] = {4411, 4412, 4413, 4414};
+char* remote_ips[CAP] = {"127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1"};
+int local_ports[CAP] = {5511, 5512, 5513, 5514};
 
-int send_round_robin_idx = 0;
-int recv_round_robin_idx = 0;
 #define ThreshIter 1000
 #define SEQ_LEN 5000
 #define WORKER_THREAD_NUM 30
@@ -73,41 +74,40 @@ int block_seq[SEQ_LEN];
 int wait4connection(char*local_ip, int local_port);
 void sendTd(int send_thread_id);
 void recvTd(int recv_thread_id);
-
 void rdma_sendTd(int send_thread_id);
 void rdma_recvTd(int recv_thread_id);
-
 void rdma_sendTd_loop(int send_thread_id);
 void rdma_recvTd_loop(int recv_thread_id);
 void InitContext();
-
 void submf();
 void WriteLog(Block&Pb, Block&Qb, int iter_cnt);
 void LoadRmatrix(int file_no, map<long, double>& myMap);
 void CalcUpdt(int thread_id);
 void LoadData();
-void LoadData4();
-void LoadRequiredData(int row, int col, int data_idx);
 void InitFlag();
+bool CanCompute(int coming_iter, int recved_age);
+bool CanPush(int completed_iter, int sended_age);
 
 int thread_id = -1;
 struct timeval start, stop, diff;
 vector<bool> StartCalcUpdt;
 map<long, double> RMap;
 map<long, double> RMaps[8][8];
-
 std::vector<long> hash_for_row_threads[10][10][WORKER_THREAD_NUM];
 std::vector<double> rates_for_row_threads[10][10][WORKER_THREAD_NUM];
 std::vector<long> hash_for_col_threads[10][10][WORKER_THREAD_NUM];
 std::vector<double> rates_for_col_threads[10][10][WORKER_THREAD_NUM];
-int iter_cnt = 0;
+int iter_t = 0;
+int recved_age = -1;
+int sended_age = -1;
+int completed_iter = -1;
+
 long long calcTimes[2000];
 long long calc_time;
 long long load_time;
 long long loadTimes[2000];
 int main(int argc, const char * argv[])
 {
-
     for (int i = 0; i < CAP; i++)
     {
         local_ports[i] = 20000 + i;
@@ -115,37 +115,24 @@ int main(int argc, const char * argv[])
     }
     int thresh_log = 1200;
     thread_id = atoi(argv[1]);
-
     if (argc >= 3)
     {
         thresh_log = atoi(argv[2]);
     }
-
-    for (int i = 0; i < QP_GROUP; i++)
-    {
-        int th_id = thread_id + i * WORKER_N_1;
-        printf("recv th_id=%d\n", th_id );
-        std::thread recv_loop_thread(rdma_recvTd_loop, th_id);
-        recv_loop_thread.detach();
-        std::thread recv_thread(rdma_recvTd, th_id);
-        //std::thread recv_thread(recvTd, thread_id);
-        recv_thread.detach();
-    }
-
+    int th_id = thread_id;
+    printf("recv th_id=%d\n", th_id );
+    std::thread recv_loop_thread(rdma_recvTd_loop, th_id);
+    recv_loop_thread.detach();
+    std::thread recv_thread(rdma_recvTd, th_id);
+    recv_thread.detach();
 
     printf("wait for you for 3s\n");
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-
-
-    for (int i = 0; i < QP_GROUP; i++)
-    {
-        int th_id = thread_id + i * WORKER_N_1;
-        std::thread send_loop_thread(rdma_sendTd_loop, th_id);
-        send_loop_thread.detach();
-        std::thread send_thread(rdma_sendTd, th_id);
-        //std::thread send_thread(sendTd, thread_id);
-        send_thread.detach();
-    }
+    std::thread send_loop_thread(rdma_sendTd_loop, th_id);
+    send_loop_thread.detach();
+    std::thread send_thread(rdma_sendTd, th_id);
+    //std::thread send_thread(sendTd, thread_id);
+    send_thread.detach();
 
     StartCalcUpdt.resize(WORKER_THREAD_NUM);
     for (int i = 0; i < WORKER_THREAD_NUM; i++)
@@ -157,18 +144,11 @@ int main(int argc, const char * argv[])
     memset(&stop, 0, sizeof(struct timeval));
     memset(&diff, 0, sizeof(struct timeval));
 
-
     iter_cnt = 0;
     calc_time = 0;
     bool isstart = false;
-
-    //LoadData();
-    //LoadData4();
-    //printf("Load Rating Success\n");
-
     std::vector<thread> td_vec;
-    //printf("wait for you for 3s\n");
-    //std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+
     for (int i = 0; i < WORKER_THREAD_NUM; i++)
     {
         //std::thread td(CalcUpdt, i);
@@ -184,18 +164,9 @@ int main(int argc, const char * argv[])
 
     while (1 == 1)
     {
-        //printf(" hasRecved? %d\n", hasRecved);
-        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-        if (hasRecved)
+        if (true == CanCompute(iter_t, recved_age))
         {
-            //printf("has Received itercnt=%d\n", iter_cnt);
-            if (!isstart)
-            {
-                isstart = true;
-                gettimeofday(&start, 0);
-            }
-
             //SGD
             int row_sta_idx = Pblock.sta_idx;
             int row_len = Pblock.height;
@@ -205,47 +176,35 @@ int main(int argc, const char * argv[])
             //printf("before submf\n");
             submf();
             //printf("after submf\n");
+            completed_iter = iter_cnt;
             iter_cnt++;
-
-
-            if (iter_cnt % 10 == 0)
-            {
-                //WriteLog(Pblock, Qblock, iter_cnt);
-                calcTimes[iter_cnt / 10] = calc_time;
-                loadTimes[iter_cnt / 10] = load_time;
-            }
-            if (iter_cnt % 100 == 0)
-            {
-                for (int i = 0; i <= 100; i++)
-                {
-                    printf("%lld\n", calcTimes[i] );
-                }
-                for (int i = 0; i <= 100; i++)
-                {
-                    printf("%lld\n", loadTimes[i] );
-                }
-                //exit(0);
-            }
-
-            if (iter_cnt == thresh_log )
-            {
-                gettimeofday(&stop, 0);
-
-                long long mksp = (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec;
-                printf("itercnt = %d  time = %lld\n", iter_cnt, mksp);
-                //WriteLog(Pblock, Qblock, iter_cnt);
-                //exit(0);
-            }
-            canSend = true;
-            //printf("canSend = true\n");
-            hasRecved = false;
-
         }
     }
 
 
 }
-
+bool CanCompute(int coming_iter, int recved_age)
+{
+    if (coming_iter <= recved_age)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+bool CanPush(int completed_iter, int sended_age)
+{
+    if (completed_iter > sended_age)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
 void InitContext()
 {
     for (int i = 0; i < CAP; i++)
@@ -257,35 +216,7 @@ void InitContext()
 
     }
 }
-void LoadRmatrix(int file_no, map<long, double>& myMap)
-{
-    char fn[100];
-    sprintf(fn, "%s%d", FILE_NAME, file_no);
-    ifstream ifs(fn);
-    if (!ifs.is_open())
-    {
-        printf("fail-Rmatrix to open the file %s\n", fn);
-        exit(-1);
-    }
-    int cnt = 0;
-    long hash_idx = -1;
-    double ra = 0;
-    long row_idx, col_idx;
 
-    while (!ifs.eof())
-    {
-        ifs >> hash_idx >> ra;
-        if (hash_idx >= 0)
-        {
-            myMap.insert(pair<long, double>(hash_idx, ra));
-            cnt++;
-            if (cnt % 1000000 == 0)
-            {
-                printf("cnt = %ld\n", cnt );
-            }
-        }
-    }
-}
 
 void LoadData()
 {
@@ -339,124 +270,6 @@ void LoadData()
                 rates_for_col_threads[row][col][cidx].push_back(rate);
             }
         }
-    }
-}
-void LoadData4()
-{
-    char fn[100];
-    long hash_id;
-    double rate;
-    long cnt = 0;
-    for (int row = 0; row < WORKER_NUM; row++)
-    {
-        for (int col = 0; col < WORKER_NUM; col++)
-        {
-            for (int td = 0; td < WORKER_THREAD_NUM; td++)
-            {
-                hash_for_row_threads[row][col][td].clear();
-                rates_for_row_threads[row][col][td].clear();
-                hash_for_col_threads[row][col][td].clear();
-                rates_for_col_threads[row][col][td].clear();
-            }
-
-        }
-    }
-    for (int data_idx = 0; data_idx < 16; data_idx++)
-    {
-        int row = data_idx / DIM_NUM;
-        int col = data_idx % DIM_NUM;
-        sprintf(fn, "%s%d", FILE_NAME, data_idx);
-        //printf("fn=%s  :[%d][%d]\n", fn, row, col );
-        ifstream ifs(fn);
-        if (!ifs.is_open())
-        {
-            printf("fail-LoadD4 to open %s\n", fn );
-            exit(-1);
-        }
-        cnt = 0;
-        long ridx, cidx;
-
-        while (!ifs.eof())
-        {
-            hash_id = -1;
-            ifs >> hash_id >> rate;
-            //scale
-            rate = rate / 100;
-            if (hash_id >= 0)
-            {
-                ridx = ((hash_id) / M) % WORKER_THREAD_NUM;
-                cidx = ((hash_id) % M) % WORKER_THREAD_NUM;
-
-                hash_for_row_threads[row][col][ridx].push_back(hash_id);
-                rates_for_row_threads[row][col][ridx].push_back(rate);
-                hash_for_col_threads[row][col][cidx].push_back(hash_id);
-                rates_for_col_threads[row][col][cidx].push_back(rate);
-            }
-        }
-        printf("Load %s okay\n", fn );
-
-    }
-}
-
-void LoadRequiredData(int row, int col, int data_idx)
-{
-    char fn[100];
-    long hash_id;
-    double rate;
-    long cnt = 0;
-    sprintf(fn, "%s%d", FILE_NAME, data_idx);
-    printf("fn-required=%s  :[%d][%d]\n", fn, row, col );
-    ifstream ifs(fn);
-    if (!ifs.is_open())
-    {
-        printf("fail-required to open %s\n", fn );
-        exit(-1);
-    }
-    cnt = 0;
-    long ridx, cidx;
-    hash_id = -1;
-    while (!ifs.eof())
-    {
-        ifs >> hash_id >> rate;
-        //min-max scaling for Yahoo!Music
-        rate = rate / 100;
-        if (hash_id >= 0)
-        {
-            ridx = ((hash_id) / M) % WORKER_THREAD_NUM;
-            cidx = ((hash_id) % M) % WORKER_THREAD_NUM;
-            hash_for_row_threads[row][col][ridx].push_back(hash_id);
-            rates_for_row_threads[row][col][ridx].push_back(rate);
-            hash_for_col_threads[row][col][cidx].push_back(hash_id);
-            rates_for_col_threads[row][col][cidx].push_back(rate);
-        }
-
-    }
-
-}
-
-
-void WriteLog(Block&Pb, Block&Qb, int iter_cnt)
-{
-    char fn[100];
-    sprintf(fn, "./PS-track/Pblock-%d-%d", iter_cnt, Pb.block_id);
-    ofstream pofs(fn, ios::trunc);
-    for (int h = 0; h < Pb.height; h++)
-    {
-        for (int j = 0; j < K; j++)
-        {
-            pofs << Pb.eles[h * K + j] << " ";
-        }
-        pofs << endl;
-    }
-    sprintf(fn, "./PS-track/Qblock-%d-%d", iter_cnt, Qb.block_id);
-    ofstream qofs(fn, ios::trunc);
-    for (int h = 0; h < Qb.height; h++)
-    {
-        for (int j = 0; j < K; j++)
-        {
-            qofs << Qb.eles[h * K + j] << " ";
-        }
-        qofs << endl;
     }
 }
 
@@ -579,81 +392,17 @@ void submf()
 {
     int minN = Pblock.height;
     int minM = Qblock.height;
-
     int row_sta_idx = Pblock.sta_idx;
     int col_sta_idx = Qblock.sta_idx;
     int row_len = Pblock.height;
     int col_len = Qblock.height;
-
     int Psz = Pblock.height * K;
     int Qsz = Qblock.height * K;
-    //printf("copying ...\n");
     oldP = Pblock.eles;
-    //printf("copy P fin ele=%ld Psz = %d Ph=%d K=%d\n", oldP.size(), Psz, Pblock.height, K);
     oldQ = Qblock.eles;
-    //printf("copy Q fin ele=%ld Qsz=%d Qh=%d  K=%d\n", oldQ.size(), Qsz, Qblock.height, K);
-    //getchar();
-    /*
-    for (int i = 0; i < Psz; i++)
-    {
-        //printf("[%d]:%lf\n", i, oldP[i] );
-        if (oldP[i] > 100 || oldP[i] < -100)
-        {
-            printf("P Exception! [%d] %lf\n", i, oldP[i]);
-            getchar();
-        }
-
-    }
-    //printf("comere hhe\n");
-    for (int i = 0; i < Qsz; i++)
-    {
-        if (oldQ[i] > 100 || oldQ[i] < -100)
-        {
-            printf("Q Exception! [%d] %lf\n", i, oldQ[i]);
-            getchar();
-        }
-
-    }
-    **/
-    //printf("enter submf22\n");
-
     struct timeval beg, ed;
     long long mksp;
     gettimeofday(&beg, 0);
-
-    /*
-        int r1 = Pblock.block_id * 2;
-        int c1 = Qblock.block_id * 2;
-        int f1 = r1 * 8 + c1;
-        int f2 = r1 * 8 + c1 + 1;
-        int f3 = (r1 + 1) * 8 + c1;
-        int f4 = (r1 + 1) * 8 + c1 + 1;
-
-        int row = Pblock.block_id;
-        int col = Qblock.block_id;
-        //printf("row=%d col=%d\n", row, col );
-        for (int td = 0; td < WORKER_THREAD_NUM; td++)
-        {
-            hash_for_row_threads[row][col][td].clear();
-            rates_for_row_threads[row][col][td].clear();
-            hash_for_col_threads[row][col][td].clear();
-            rates_for_col_threads[row][col][td].clear();
-        }
-        LoadRequiredData(row, col, f1);
-        LoadRequiredData(row, col, f2);
-        LoadRequiredData(row, col, f3);
-        LoadRequiredData(row, col, f4);
-    **/
-    /*
-    for (int td = 0; td < WORKER_THREAD_NUM; td++)
-    {
-        {
-            printf("[%d][%d] %ld\n", row, col, hash_for_row_threads[row][col][td] );
-        }
-    }
-    **/
-
-
     int row = Pblock.block_id;
     int col = Qblock.block_id;
     //printf("row=%d col=%d\n", row, col );
@@ -664,22 +413,16 @@ void submf()
         hash_for_col_threads[row][col][td].clear();
         rates_for_col_threads[row][col][td].clear();
     }
-    int f1 = row * 4 + col;
-    printf("row=%d col=%d\n", row, col );
-    LoadRequiredData(row, col, f1);
 
     gettimeofday(&ed, 0);
     mksp = (ed.tv_sec - beg.tv_sec) * 1000000 + ed.tv_usec - beg.tv_usec;
     load_time += mksp;
     printf("Load time = %lld\n", mksp);
-
-
     bool canbreak = true;
     for (int ii = 0; ii < WORKER_THREAD_NUM; ii++)
     {
         StartCalcUpdt[ii] = 1;
     }
-
     while (1 == 1)
     {
         canbreak = true;
@@ -698,19 +441,12 @@ void submf()
             break;
         }
     }
-
-
     gettimeofday(&ed, 0);
     mksp = (ed.tv_sec - beg.tv_sec) * 1000000 + ed.tv_usec - beg.tv_usec;
 
     calc_time += mksp;
     printf("Calc  time = %lld\n", mksp);
-
-
 }
-
-
-
 
 
 int wait4connection(char*local_ip, int local_port)
@@ -774,7 +510,7 @@ void rdma_sendTd(int send_thread_id)
 {
 
     size_t struct_sz = sizeof(Block);
-    int mapped_thread_id = send_thread_id / WORKER_N_1;
+    int mapped_thread_id = send_thread_id;
     while (c_ctx[mapped_thread_id].buf_registered == false)
     {
         //printf("[%d] has not registered buffer\n", send_thread_id);
@@ -784,36 +520,26 @@ void rdma_sendTd(int send_thread_id)
     while (1 == 1)
     {
         //printf("canSend=%d\n", canSend );
-        if (canSend)
+        if (true == CanPush(completed_iter, sended_age))
         {
-            //struct timeval st, et, tspan;
-
             printf("Td:%d cansend\n", thread_id );
-
             size_t p_data_sz = sizeof(double) * Pblock.ele_num;
             size_t q_data_sz = sizeof(double) * Qblock.ele_num;
             size_t p_total = struct_sz + p_data_sz;
             size_t q_total = struct_sz + q_data_sz;
             size_t total_len = p_total + q_total;
-
-
-
             char* buf = c_ctx[mapped_thread_id].buffer;
-
             memcpy(buf, &(Pblock), struct_sz);
-            memcpy(buf + struct_sz, (char*) & (Pblock.eles[0]), p_data_sz);
+            memcpy(buf + struct_sz, (char*) & (Pblock.eles), p_data_sz);
 
             memcpy(buf + p_total, &(Qblock), struct_sz);
-            memcpy(buf + p_total + struct_sz , (char*) & (Qblock.eles[0]), q_data_sz);
-
-
-
+            memcpy(buf + p_total + struct_sz , (char*) & (Qblock.eles), q_data_sz);
             c_ctx[mapped_thread_id].buf_len = total_len;
             c_ctx[mapped_thread_id].buf_prepared = true;
 
             printf("[%d][%d] Marked send buf  p_total = %ld p_data_sz=%ld q_total=%ld q_data_sz=%ld total_len=%ld\n", send_thread_id, mapped_thread_id, p_total, p_data_sz, q_total, q_data_sz, total_len);
 
-            canSend = false;
+            sended_age++;
         }
 
     }
@@ -824,7 +550,6 @@ void rdma_recvTd(int recv_thread_id)
 {
 
     size_t struct_sz = sizeof(Block);
-
     int mapped_thread_id = recv_thread_id / WORKER_N_1;
     while (s_ctx[mapped_thread_id].buf_registered == false)
     {
@@ -834,21 +559,13 @@ void rdma_recvTd(int recv_thread_id)
     printf("[%d] has registered receive buffer\n", recv_thread_id);
     while (1 == 1)
     {
-        if (mapped_thread_id != recv_round_robin_idx % QP_GROUP)
-        {
-            continue;
-        }
-        /*
-        struct timeval st, et;
-        gettimeofday(&st, 0);
-        */
+
         if (s_ctx[mapped_thread_id].buf_prepared == false)
         {
             //printf("[%d] recv buf prepared = false\n", recv_thread_id );
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
-        //printf("[%d] recv buf prepared = true\n", recv_thread_id );
 
         char* real_sta_buf = s_ctx[mapped_thread_id].buffer;
 
@@ -858,14 +575,12 @@ void rdma_recvTd(int recv_thread_id)
         Pblock.sta_idx = pb->sta_idx;
         Pblock.height = pb->height;
         Pblock.ele_num = pb->ele_num;
-        Pblock.eles.resize(pb->ele_num);
+        Pblock.eles = Malloc(double, pb->ele_num);
         double* data_eles = (double*)(void*) (real_sta_buf + struct_sz);
         for (int i = 0; i < Pblock.ele_num; i++)
         {
             Pblock.eles[i] = data_eles[i];
         }
-
-
         size_t p_total = struct_sz + sizeof(double) * (pb->ele_num);
         struct Block* qb = (struct Block*)(void*)(real_sta_buf + p_total);
         Qblock.block_id = qb->block_id;
@@ -873,28 +588,17 @@ void rdma_recvTd(int recv_thread_id)
         Qblock.sta_idx = qb->sta_idx;
         Qblock.height = qb->height;
         Qblock.ele_num = qb-> ele_num;
-        Qblock.eles.resize(qb->ele_num);
-        //printf("[%d]get qblock id=%d  ele_num=%d  isP=%d qb=%p\n", recv_thread_id,  qb->block_id, qb->ele_num, qb->isP, qb);
-        //data_eles = (double*)(void*)(to_recv_block_mem + BLOCK_MEM_SZ + struct_sz);
+        Qblock.eles = Malloc(double, qb->ele_num);
         data_eles = (double*)(void*)(real_sta_buf + p_total + struct_sz);
         for (int i = 0; i < Qblock.ele_num; i++)
         {
             Qblock.eles[i] = data_eles[i];
         }
-        /*
-        gettimeofday(&et, 0);
-        long long mksp = (et.tv_sec - st.tv_sec) * 1000000 + et.tv_usec - st.tv_usec;
-        printf("[%d]:recv two blocks time = %lld\n", recv_thread_id, mksp);
-        **/
-
 
         //this buf I have read it, so please prepare new buf content
         s_ctx[mapped_thread_id].buf_prepared = false;
+        recved_age++;
 
-        printf("[%d]get pblock id=%d  ele_num=%d  qblock id=%d  ele_num=%d\n", recv_thread_id, pb->block_id, pb->ele_num, qb->block_id, qb->ele_num);
-
-        recv_round_robin_idx++;
-        hasRecved = true;
     }
 
 }

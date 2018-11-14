@@ -34,20 +34,23 @@
 using namespace std;
 
 
-
 struct client_context c_ctx[CAP];
 struct conn_context s_ctx[CAP];
 int send_round_robin_idx[CAP];
 int recv_round_robin_idx[CAP];
-
-int WORKER_NUM = 4;
+/*
 char* local_ips[CAP] = {"12.12.10.18", "12.12.10.18", "12.12.10.18", "12.12.10.18"};
 int local_ports[CAP] = {4411, 4412, 4413, 4414};
 char* remote_ips[CAP] = {"12.12.10.12", "12.12.10.15", "12.12.10.19", "12.12.10.17"};
 int remote_ports[CAP] = {5511, 5512, 5513, 5514};
+**/
+char* local_ips[CAP] = {"127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1"};
+int local_ports[CAP] = {4411, 4412, 4413, 4414};
+char* remote_ips[CAP] = {"127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1"};
+int remote_ports[CAP] = {5511, 5512, 5513, 5514};
 struct Block Pblocks[CAP];
 struct Block Qblocks[CAP];
-
+int worker_num = WORKER_NUM;
 
 
 void WriteLog(Block&Pb, Block&Qb, int iter_cnt);
@@ -62,9 +65,10 @@ void InitContext();
 void partitionP(int portion_num,  Block* Pblocks);
 void partitionQ(int portion_num,  Block* Qblocks);
 void InitFlag();
+bool CanSend(int coming_iter, int completed_data[], int len);
+void partitionBlock(int rc_num, int dim, int portion_num,  Block * Blocks)
 
-atomic_int recvCount(0);
-bool canSend[CAP] = {false};
+int recved_iter[CAP];
 int worker_pidx[CAP];
 int worker_qidx[CAP];
 
@@ -72,7 +76,6 @@ long long time_span[300];
 int iter_t = 0;
 int main(int argc, const char * argv[])
 {
-
     for (int i = 0; i < CAP; i++)
     {
         local_ports[i] = 10000 + i;
@@ -82,43 +85,25 @@ int main(int argc, const char * argv[])
     //gen P and Q
     if (argc == 2)
     {
-        WORKER_NUM = atoi(argv[1]) ;
+        worker_num = atoi(argv[1]) ;
     }
 
-
-    for (int gp = 0; gp < QP_GROUP; gp++)
+    int thid = 0;
+    for (thid = 0; thid < worker_num; thid++)
     {
-        for (int recv_thread_id = 0; recv_thread_id < WORKER_NUM; recv_thread_id++)
-        {
-            int thid = recv_thread_id + gp * WORKER_NUM;
-            printf("thid=%d\n", thid );
-            //std::thread recv_thread(recvTd, thid);
-            //recv_thread.detach();
-
-            std::thread recv_loop_thread(rdma_recvTd_loop, thid);
-            recv_loop_thread.detach();
-
-            std::thread recv_thread(rdma_recvTd, thid);
-            recv_thread.detach();
-
-        }
+        printf("thid=%d\n", thid );
+        std::thread recv_loop_thread(rdma_recvTd_loop, thid);
+        recv_loop_thread.detach();
+        std::thread recv_thread(rdma_recvTd, thid);
+        recv_thread.detach();
     }
 
-    for (int gp = 0; gp < QP_GROUP; gp++)
+    for (thid = 0; thid < worker_num; thid++)
     {
-        for (int send_thread_id = 0; send_thread_id < WORKER_NUM; send_thread_id++)
-        {
-            int thid = send_thread_id + gp * WORKER_NUM;
-            //std::thread send_thread(sendTd, thid);
-            //send_thread.detach();
-
-            std::thread send_loop_thread(rdma_sendTd_loop, thid);
-            send_loop_thread.detach();
-
-            std::thread send_thread(rdma_sendTd, thid);
-            send_thread.detach();
-
-        }
+        std::thread send_loop_thread(rdma_sendTd_loop, thid);
+        send_loop_thread.detach();
+        std::thread send_thread(rdma_sendTd, thid);
+        send_thread.detach();
     }
 
     printf("wait for 3s\n");
@@ -128,128 +113,50 @@ int main(int argc, const char * argv[])
     //LoadTestRating();
     //printf("Load Complete\n");
     printf("start work\n");
-    partitionP(WORKER_NUM, Pblocks);
-    partitionQ(WORKER_NUM, Qblocks);
-    for (int i = 0; i < WORKER_NUM; i++)
+    partitionBlock(N, K, worker_num, Pblocks);
+    partitionBlock(M, K, worker_num, Qblocks);
+    for (int i = 0; i < worker_num; i++)
     {
         for (int j = 0; j < Pblocks[i].ele_num; j++)
         {
-            //Pblocks[i].eles[j] = drand48() * 0.6;
-            //Pblocks[i].eles[j] = drand48() * 0.3;
-            //Pblocks[i].eles[j] = drand48() * 1.6;
             Pblocks[i].eles[j] = drand48() * 0.2;
         }
         for (int j = 0; j < Qblocks[i].ele_num; j++)
         {
-            //Qblocks[i].eles[j] = drand48() * 0.6;
-            //Qblocks[i].eles[j] = drand48() * 0.3;
-            //Qblocks[i].eles[j] = drand48() * 1.6;
             Qblocks[i].eles[j] = drand48() * 0.2;
         }
     }
 
-    for (int i = 0; i < WORKER_NUM; i++)
+    for (int i = 0; i < worker_num; i++)
     {
-        canSend[i] = false;
-    }
-    for (int i = 0; i < WORKER_NUM; i++)
-    {
+        recved_iter[i] = -1;
         worker_pidx[i] = worker_qidx[i] = i;
     }
 
-    /*
-        for (int send_thread_id = 0; send_thread_id < WORKER_NUM; send_thread_id++)
-        {
-            std::thread send_thread(sendTd, send_thread_id);
-            send_thread.detach();
-        }
-        for (int recv_thread_id = 0; recv_thread_id < WORKER_NUM; recv_thread_id++)
-        {
-            std::thread recv_thread(recvTd, recv_thread_id);
-            recv_thread.detach();
-        }
-    **/
-
-    /*
-        std::thread send_thread(rdma_sendTd, 2);
-        send_thread.detach();
-        std::thread recv_thread(rdma_recvTd, 2);
-        recv_thread.detach();
-    **/
-
-    for (int i = 0; i < WORKER_NUM; i++)
-    {
-        worker_pidx[i] = i;
-        worker_qidx[i] = 3 - i;
-    }
-    for (int i = 0; i < WORKER_NUM; i++)
-    {
-        send_round_robin_idx[i] = i;
-        recv_round_robin_idx[i] = i;
-    }
     struct timeval beg, ed;
     iter_t = 0;
+    gettimeofday(&beg, 0);
     while (1 == 1)
     {
         srand(time(0));
         bool ret = false;
-        //random_shuffle(worker_pidx, worker_pidx + WORKER_NUM); //迭代器
         random_shuffle(worker_qidx, worker_qidx + WORKER_NUM); //迭代器
-
-
-        for (int i = 0; i < WORKER_NUM; i++)
+        for (int i = 0; i < worker_num; i++)
         {
             printf("%d  [%d:%d]\n", i, worker_pidx[i], worker_qidx[i] );
         }
-
-        //printf("here start to send\n");
-        //getchar();
-        printf("[%d]canSend...!\n", iter_t);
-        for (int i = 0; i < WORKER_NUM; i++)
+        if (false == CanSend(iter_t, recved_iter, worker_num))
         {
-            canSend[i] = true;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-
-        //getchar();
-        while (recvCount != WORKER_NUM)
+        if (iter_t % 10 == 0 )
         {
-            //cout << "RecvCount\t" << recvCount << endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+            gettimeofday(&ed, 0);
+            time_span[iter_t / 10] = (ed.tv_sec - beg.tv_sec) * 1000000 + ed.tv_usec - beg.tv_usec;
+            printf("time= %d\t%lld\n", iter_t, time_span[iter_t / 10] );
 
-
-        if (iter_t == 0)
-        {
-            gettimeofday(&beg, 0);
-        }
-        if (recvCount == WORKER_NUM)
-        {
-            if (iter_t % 10 == 0 )
-            {
-                gettimeofday(&ed, 0);
-
-                for (int bid = 0; bid < WORKER_NUM; bid++)
-                {
-                    //WriteLog(Pblocks[bid], Qblocks[bid], iter_t);
-                }
-
-                time_span[iter_t / 10] = (ed.tv_sec - beg.tv_sec) * 1000000 + ed.tv_usec - beg.tv_usec;
-                printf("time= %d\t%lld\n", iter_t, time_span[iter_t / 10] );
-
-            }
-
-
-            recvCount = 0;
         }
         iter_t++;
-        if (iter_t % 100 == 0)
-        {
-            for (int i = 0; i <= iter_t / 10; i++)
-            {
-                printf("%lld\n", time_span[i] );
-            }
-
-        }
         if (iter_t == 1200)
         {
             exit(0);
@@ -260,6 +167,18 @@ int main(int argc, const char * argv[])
     return 0;
 }
 
+bool CanSend(int coming_iter, int completed_data[], int len)
+{
+    int i = 0;
+    for (i = 0; i < len; i++)
+    {
+        if (coming_iter > completed_data[i] + 1)
+        {
+            return false;
+        }
+    }
+    return true;
+}
 void InitContext()
 {
     for (int i = 0; i < CAP; i++)
@@ -270,34 +189,6 @@ void InitContext()
         s_ctx[i].buf_registered = false;
 
     }
-}
-
-void WriteLog(Block & Pb, Block & Qb, int iter_cnt)
-{
-    char fn[100];
-    sprintf(fn, "./Rtrack/Pblock-%d-%d", iter_cnt, Pb.block_id);
-    ofstream pofs(fn, ios::trunc);
-    for (int h = 0; h < Pb.height; h++)
-    {
-        for (int j = 0; j < K; j++)
-        {
-            pofs << Pb.eles[h * K + j] << " ";
-        }
-        pofs << endl;
-    }
-    printf("fn:%s\n", fn );
-    sprintf(fn, "./Rtrack/Qblock-%d-%d", iter_cnt, Qb.block_id);
-    ofstream qofs(fn, ios::trunc);
-    for (int h = 0; h < Qb.height; h++)
-    {
-        for (int j = 0; j < K; j++)
-        {
-            qofs << Qb.eles[h * K + j] << " ";
-        }
-        qofs << endl;
-    }
-    printf("fn:%s\n", fn );
-    //getchar();
 }
 
 int wait4connection(char*local_ip, int local_port)
@@ -341,52 +232,27 @@ int wait4connection(char*local_ip, int local_port)
 
 
 
-void partitionP(int portion_num,  Block * Pblocks)
+void partitionBlock(int rc_num, int dim, int portion_num,  Block * Blocks)
 {
     int i = 0;
-    int height = N / portion_num;
-    int last_height = N - (portion_num - 1) * height;
-
+    int height = (rc_num + portion_num - 1) / portion_num;
+    int acc_height = 0;
     for (i = 0; i < portion_num; i++)
     {
-        Pblocks[i].block_id = i;
-        Pblocks[i].data_age = 0;
-        Pblocks[i].eles.clear();
-        Pblocks[i].height = height;
-        int sta_idx = i * height;
-        if ( i == portion_num - 1)
+        Blocks[i].block_id = i;
+        Blocks[i].data_age = 0;
+        Blocks[i].sta_idx = i * height;
+        if (acc_height + height <= rc_num)
         {
-            Pblocks[i].height = last_height;
+            Blocks[i].height = height;
         }
-        Pblocks[i].sta_idx = sta_idx;
-        //printf("i-%d sta_idx-%d\n", i, sta_idx );
-        Pblocks[i].ele_num = Pblocks[i].height * K;
-        Pblocks[i].eles.resize(Pblocks[i].ele_num);
-    }
-
-}
-
-void partitionQ(int portion_num,  Block * Qblocks)
-{
-    int i = 0;
-    int height = M / portion_num;
-    int last_height = M - (portion_num - 1) * height;
-
-    for (i = 0; i < portion_num; i++)
-    {
-        Qblocks[i].block_id = i;
-        Qblocks[i].data_age = 0;
-        Qblocks[i].eles.clear();
-        Qblocks[i].height = height;
-        int sta_idx = i * height;
-        if ( i == portion_num - 1)
+        else
         {
-            Qblocks[i].height = last_height;
+            Blocks[i].height = rc_num - acc_height;
         }
-        Qblocks[i].sta_idx = sta_idx;
-        Qblocks[i].ele_num = Qblocks[i].height * K;
-        Qblocks[i].eles.resize(Qblocks[i].ele_num);
-
+        acc_height += Blocks[i].height;
+        Blocks[i].ele_num = Blocks[i].height * dim;
+        Blocks[i].eles = Malloc(double, Blocks[i].ele_num);
     }
 
 }
