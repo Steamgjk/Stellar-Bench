@@ -33,8 +33,8 @@
 #define CAP 2000
 
 
-#define TWO_SIDED_RDMA 0
-#define ONE_SIDED_RDMA 1
+#define TWO_SIDED_RDMA 1
+#define ONE_SIDED_RDMA 0
 
 #if TWO_SIDED_RDMA
 #include "rdma_two_sided_client_op.h"
@@ -69,8 +69,8 @@ struct conn_context s_ctx[CAP];
 //#define M  2649429 //col number
 //#define K  40 //主题个数
 
-//#define FILE_NAME "./movielen10M_train.txt"
-//#define TEST_NAME "./movielen10M_test.txt"
+#define FILE_NAME "./movielen10M_train.txt"
+#define TEST_NAME "./movielen10M_test.txt"
 
 /*
 #define FILE_NAME "./mdata/traina-"
@@ -87,23 +87,23 @@ struct conn_context s_ctx[CAP];
 #define K  100 //主题个数
 **/
 
-
+/*
 #define FILE_NAME "./yahoo-output/train-"
 #define TEST_NAME "./yahoo-output/test"
 #define N 1000990
 #define M 624961
 #define K  100 //主题个数
-
-/**Movie-Len**/
-/*
-double yita = 0.003;
-double theta = 0.01;
 **/
 
-/* Jumbo **/
+/**Movie-Len**/
+double yita = 0.003;
+double theta = 0.01;
 
+/* Jumbo **/
+/*
 double yita = 0.002;
 double theta = 0.05;
+**/
 
 /**Yahoo!Music**/
 /*

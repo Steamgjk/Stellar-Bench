@@ -30,8 +30,8 @@
 #include <map>
 
 
-#define TWO_SIDED_RDMA 0
-#define ONE_SIDED_RDMA 1
+#define TWO_SIDED_RDMA 1
+#define ONE_SIDED_RDMA 0
 
 #if TWO_SIDED_RDMA
 #include "rdma_two_sided_client_op.h"
@@ -51,8 +51,8 @@ using namespace std;
 //#define M  2649429 //col number
 //#define K  40 //主题个数
 
-//#define FILE_NAME "./movielen10M_train.txt"
-//#define TEST_NAME "./movielen10M_test.txt"
+#define FILE_NAME "./movielen10M_train.txt"
+#define TEST_NAME "./movielen10M_test.txt"
 
 /*
 #define FILE_NAME "./mdata/traina-"
@@ -71,13 +71,13 @@ using namespace std;
 #define K  100 //主题个数
 **/
 /**Yahoo!Music **/
-
+/*
 #define FILE_NAME "./yahoo-output/train-"
 #define TEST_NAME "./yahoo-output/test"
 #define N 1000990
 #define M 624961
 #define K  100 //主题个数
-
+**/
 
 
 #if ONE_SIDED_RDMA
