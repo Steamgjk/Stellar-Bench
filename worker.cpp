@@ -508,8 +508,7 @@ void rdma_sendTd(int send_thread_id)
 {
 
     size_t struct_sz = sizeof(Block);
-    int mapped_thread_id = send_thread_id;
-    while (c_ctx[mapped_thread_id].buf_registered == false)
+    while (c_ctx[send_thread_id].buf_registered == false)
     {
         //printf("[%d] has not registered buffer\n", send_thread_id);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -526,16 +525,15 @@ void rdma_sendTd(int send_thread_id)
             size_t p_total = struct_sz + p_data_sz;
             size_t q_total = struct_sz + q_data_sz;
             size_t total_len = p_total + q_total;
-            char* buf = c_ctx[mapped_thread_id].buffer;
+            char* buf = c_ctx[send_thread_id].buffer;
             memcpy(buf, &(Pblock), struct_sz);
             memcpy(buf + struct_sz, (char*) & (Pblock.eles), p_data_sz);
 
             memcpy(buf + p_total, &(Qblock), struct_sz);
             memcpy(buf + p_total + struct_sz , (char*) & (Qblock.eles), q_data_sz);
-            c_ctx[mapped_thread_id].buf_len = total_len;
-            c_ctx[mapped_thread_id].buf_prepared = true;
+            c_ctx[send_thread_id].buf_len = total_len;
+            c_ctx[send_thread_id].buf_prepared = true;
 
-            printf("[%d][%d] Marked send buf  p_total = %ld p_data_sz=%ld q_total=%ld q_data_sz=%ld total_len=%ld\n", send_thread_id, mapped_thread_id, p_total, p_data_sz, q_total, q_data_sz, total_len);
 
             sended_age++;
         }
@@ -592,7 +590,7 @@ void rdma_recvTd(int recv_thread_id)
         }
 
         //this buf I have read it, so please prepare new buf content
-        s_ctx[mapped_thread_id].buf_prepared = false;
+        s_ctx[recv_thread_id].buf_prepared = false;
         recved_age++;
 
     }
