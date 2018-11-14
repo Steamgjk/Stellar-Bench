@@ -63,14 +63,16 @@ void InitContext();
 void partitionP(int portion_num,  Block* Pblocks);
 void partitionQ(int portion_num,  Block* Qblocks);
 void InitFlag();
-bool CanSend(int coming_iter, int completed_data[], int len);
-void partitionBlock(int rc_num, int dim, int portion_num,  Block * Blocks)
+bool CanMerge(int coming_iter, int r_iter[], int len);
+void partitionBlock(int rc_num, int dim, int portion_num,  Block * Blocks);
 
 int recved_iter[CAP];
+int sended_iter[CAP];
 int worker_pidx[CAP];
 int worker_qidx[CAP];
 long long time_span[300];
 int iter_t = 0;
+int completed_iter = -1;
 int main(int argc, const char * argv[])
 {
     for (int i = 0; i < CAP; i++)
@@ -127,6 +129,7 @@ int main(int argc, const char * argv[])
     for (int i = 0; i < worker_num; i++)
     {
         recved_iter[i] = -1;
+        sended_iter[i] = -1;
         worker_pidx[i] = worker_qidx[i] = i;
     }
 
@@ -135,17 +138,17 @@ int main(int argc, const char * argv[])
     gettimeofday(&beg, 0);
     while (1 == 1)
     {
+        if (false == CanMerge(iter_t, recved_iter, worker_num))
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
         srand(time(0));
-        bool ret = false;
-        random_shuffle(worker_qidx, worker_qidx + WORKER_NUM); //迭代器
+        random_shuffle(worker_qidx, worker_qidx + worker_num); //迭代器
         for (int i = 0; i < worker_num; i++)
         {
             printf("%d  [%d:%d]\n", i, worker_pidx[i], worker_qidx[i] );
         }
-        if (false == CanSend(iter_t, recved_iter, worker_num))
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
+
         if (iter_t % 10 == 0 )
         {
             gettimeofday(&ed, 0);
@@ -153,6 +156,7 @@ int main(int argc, const char * argv[])
             printf("time= %d\t%lld\n", iter_t, time_span[iter_t / 10] );
 
         }
+        completed_iter = iter_t;
         iter_t++;
         if (iter_t == 1200)
         {
@@ -164,17 +168,29 @@ int main(int argc, const char * argv[])
     return 0;
 }
 
-bool CanSend(int coming_iter, int completed_data[], int len)
+bool CanMerge(int coming_iter, int r_iter[], int len)
 {
     int i = 0;
     for (i = 0; i < len; i++)
     {
-        if (coming_iter > completed_data[i] + 1)
+        if (coming_iter > r_iter[i] + 1)
         {
             return false;
         }
     }
     return true;
+}
+bool CanSend(int sended_age, int completed_age)
+{
+    if (sended_age <= completed_age)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+
 }
 void InitContext()
 {
@@ -257,28 +273,23 @@ void partitionBlock(int rc_num, int dim, int portion_num,  Block * Blocks)
 
 void rdma_sendTd(int send_thread_id)
 {
-    int mapped_thread_id = send_thread_id % WORKER_NUM;
     size_t struct_sz = sizeof(Block);
     while (c_ctx[send_thread_id].buf_registered == false)
     {
-        //printf("[%d] has not registered buffer\n", send_thread_id);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
     printf("[%d] has registered send buffer\n", send_thread_id);
     while (1 == 1)
     {
-        if ( send_round_robin_idx[mapped_thread_id] != send_thread_id || (canSend[mapped_thread_id] == false) )
+        if (false == CanSend(sended_iter[send_thread_id], completed_iter) )
         {
-            //printf("canSend =%d\n", canSend[mapped_thread_id] );
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
 
-        //printf("iter_t=%d send_thread_id=%d mapped_thread_id=%d\n", iter_t, send_thread_id, mapped_thread_id );
-        if (canSend[mapped_thread_id] == true)
         {
-            int pbid = worker_pidx[mapped_thread_id];
-            int qbid = worker_qidx[mapped_thread_id];
+            int pbid = worker_pidx[send_thread_id];
+            int qbid = worker_qidx[send_thread_id];
             //printf("%d] canSend pbid=%d  qbid=%d sid=%d\n", send_thread_id, pbid, qbid, send_thread_id % WORKER_NUM );
             size_t p_data_sz = sizeof(double) * Pblocks[pbid].eles.size();
             size_t p_total = struct_sz + p_data_sz;
@@ -291,14 +302,10 @@ void rdma_sendTd(int send_thread_id)
             memcpy(real_sta_buf + struct_sz, (char*) & (Pblocks[pbid].eles[0]), p_data_sz );
             memcpy(real_sta_buf + p_total, &(Qblocks[qbid]), struct_sz);
             memcpy(real_sta_buf + p_total + struct_sz , (char*) & (Qblocks[qbid].eles[0]), q_data_sz);
-
-            //printf("[Td:%d] send success qbid=%d isP=%d  total_len=%ld qh=%d\n", send_thread_id, qbid, Qblocks[qbid].isP, total_len, Qblocks[qbid].height);
-
             c_ctx[send_thread_id].buf_len = total_len;
             c_ctx[send_thread_id].buf_prepared = true;
 
-            send_round_robin_idx[mapped_thread_id] = (send_round_robin_idx[mapped_thread_id] + WORKER_NUM) % (WORKER_NUM * QP_GROUP);
-            canSend[mapped_thread_id] = false;
+            sended_iter[send_thread_id]++;
         }
 
     }

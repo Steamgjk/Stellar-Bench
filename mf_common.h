@@ -9,7 +9,7 @@
 #define CAP 2000
 #define QP_GROUP 1
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
-
+#define WORKER_NUM 4
 struct Block
 {
 	int block_id;
