@@ -36,8 +36,6 @@ using namespace std;
 
 struct client_context c_ctx[CAP];
 struct conn_context s_ctx[CAP];
-int send_round_robin_idx[CAP];
-int recv_round_robin_idx[CAP];
 /*
 char* local_ips[CAP] = {"12.12.10.18", "12.12.10.18", "12.12.10.18", "12.12.10.18"};
 int local_ports[CAP] = {4411, 4412, 4413, 4414};
@@ -71,7 +69,6 @@ void partitionBlock(int rc_num, int dim, int portion_num,  Block * Blocks)
 int recved_iter[CAP];
 int worker_pidx[CAP];
 int worker_qidx[CAP];
-
 long long time_span[300];
 int iter_t = 0;
 int main(int argc, const char * argv[])
@@ -309,7 +306,6 @@ void rdma_sendTd(int send_thread_id)
 
 void rdma_recvTd(int recv_thread_id)
 {
-    int mapped_thread_id = recv_thread_id % WORKER_NUM;
     size_t struct_sz = sizeof(Block);
     while (s_ctx[recv_thread_id].buf_registered == false)
     {
@@ -319,12 +315,7 @@ void rdma_recvTd(int recv_thread_id)
     printf("[%d] has registered receive buffer\n", recv_thread_id);
     while (1 == 1)
     {
-        if (recv_round_robin_idx[mapped_thread_id] != recv_thread_id)
-        {
-            //printf("[%d] cazaizheli\n", recv_thread_id );
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            continue;
-        }
+
         if (s_ctx[recv_thread_id].buf_prepared == false)
         {
             //printf("[%d] recv buf_prepared = false\n", recv_thread_id );
@@ -340,43 +331,40 @@ void rdma_recvTd(int recv_thread_id)
         Pblocks[block_idx].sta_idx = pb->sta_idx;
         Pblocks[block_idx].height = pb->height;
         Pblocks[block_idx].ele_num = pb->ele_num;
-        Pblocks[block_idx].eles.resize(pb->ele_num);
+        Pblocks[block_idx].eles = Malloc(double, pb->ele_num);
         Pblocks[block_idx].isP = pb->isP;
         double*data_eles = (double*)(void*) (real_sta_buf + struct_sz);
-        for (int i = 0; i < pb->ele_num; i++)
-        {
-            Pblocks[block_idx].eles[i] = data_eles[i];
-        }
+        size_t data_sz = pb->ele_num * sizeof(double);
+        memcpy(Pblocks[block_idx].eles, data_eles, data_sz);
 
-        //printf("[%d]successful reve one Block id=%d data_ele=%d\n", recv_thread_id, pb->block_id, pb->ele_num);
+        /*
+                for (int i = 0; i < pb->ele_num; i++)
+                {
+                    Pblocks[block_idx].eles[i] = data_eles[i];
+                }
+        **/
 
-        size_t p_total = struct_sz + sizeof(double) * pb->ele_num;
-
+        size_t p_total = struct_sz + data_sz;
         struct Block * qb = (struct Block*)(void*)(real_sta_buf + p_total);
-
         data_eles = (double*)(void*) (real_sta_buf + p_total + struct_sz);
-
+        data_sz = qb->ele_num * sizeof(double);
         block_idx = qb->block_id ;
         Qblocks[block_idx].block_id = qb->block_id;
         Qblocks[block_idx].sta_idx = qb->sta_idx;
         Qblocks[block_idx].height = qb->height;
         Qblocks[block_idx].ele_num = qb->ele_num;
-        Qblocks[block_idx].eles.resize(qb->ele_num);
+        Qblocks[block_idx].eles = Malloc(double, qb->ele_num);
         Qblocks[block_idx].isP = qb->isP;
+        memcpy(Qblocks[block_idx].eles, data_eles, data_sz);
+        /*
         for (int i = 0; i < qb->ele_num; i++)
         {
             Qblocks[block_idx].eles[i] = data_eles[i];
         }
-
-        //printf("[%d]successful recv another Block id=%d data_ele=%d\n", recv_thread_id, pb->block_id, pb->ele_num);
-
+        **/
         //this buf I have read it, so please prepare new buf content
         s_ctx[recv_thread_id].buf_prepared = false;
-
-        //printf("[%d]get pid=%d qid=%d  buf_prepared=%d\n", recv_thread_id, pb->block_id, qb->block_id, s_ctx[recv_thread_id].buf_prepared);
-
-        recv_round_robin_idx[mapped_thread_id] = (recv_round_robin_idx[mapped_thread_id] + WORKER_NUM) % (WORKER_NUM * QP_GROUP);
-        recvCount++;
+        recved_iter[recv_thread_id]++;
     }
 }
 
