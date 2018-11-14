@@ -61,8 +61,8 @@ int local_ports[CAP] = {5511, 5512, 5513, 5514};
 
 struct Block Pblock;
 struct Block Qblock;
-vector<double> oldP;
-vector<double> oldQ;
+double* oldP;
+double* oldQ;
 vector<long> hash_ids;
 std::vector<long> rates;
 
@@ -398,8 +398,8 @@ void submf()
     int col_len = Qblock.height;
     int Psz = Pblock.height * K;
     int Qsz = Qblock.height * K;
-    oldP = Pblock.eles;
-    oldQ = Qblock.eles;
+    memcpy(oldP, Pblock.eles, Psz);
+    memcpy(oldQ, Qblock.eles, Qsz);
     struct timeval beg, ed;
     long long mksp;
     gettimeofday(&beg, 0);
