@@ -31,21 +31,15 @@
 #include <map>
 
 #define CAP 2000
-#define TWO_SIDED_RDMA 1
-
-#if TWO_SIDED_RDMA
 #include "rdma_two_sided_client_op.h"
 #include "rdma_two_sided_server_op.h"
-#endif
 
 using namespace std;
 #define GROUP_NUM 1
 #define DIM_NUM 4
 
-#if TWO_SIDED_RDMA
 struct client_context c_ctx[CAP];
 struct conn_context s_ctx[CAP];
-#endif
 
 #define FILE_NAME "./yahoo-output/train-"
 #define TEST_NAME "./yahoo-output/test"
@@ -56,7 +50,6 @@ struct conn_context s_ctx[CAP];
 /**Yahoo!Music**/
 double yita = 0.001;
 double theta = 0.05;
-#define CAP 500
 #define WORKER_NUM 1
 #define WORKER_N_1 4
 #define QP_GROUP 1
@@ -162,11 +155,9 @@ void recvTd(int recv_thread_id);
 void rdma_sendTd(int send_thread_id);
 void rdma_recvTd(int recv_thread_id);
 
-#if TWO_SIDED_RDMA
 void rdma_sendTd_loop(int send_thread_id);
 void rdma_recvTd_loop(int recv_thread_id);
 void InitContext();
-#endif
 
 void submf();
 void WriteLog(Block&Pb, Block&Qb, int iter_cnt);
@@ -212,10 +203,8 @@ int main(int argc, const char * argv[])
     {
         int th_id = thread_id + i * WORKER_N_1;
         printf("recv th_id=%d\n", th_id );
-#if TWO_SIDED_RDMA
         std::thread recv_loop_thread(rdma_recvTd_loop, th_id);
         recv_loop_thread.detach();
-#endif
         std::thread recv_thread(rdma_recvTd, th_id);
         //std::thread recv_thread(recvTd, thread_id);
         recv_thread.detach();
@@ -229,10 +218,8 @@ int main(int argc, const char * argv[])
     for (int i = 0; i < QP_GROUP; i++)
     {
         int th_id = thread_id + i * WORKER_N_1;
-#if TWO_SIDED_RDMA
         std::thread send_loop_thread(rdma_sendTd_loop, th_id);
         send_loop_thread.detach();
-#endif
         std::thread send_thread(rdma_sendTd, th_id);
         //std::thread send_thread(sendTd, thread_id);
         send_thread.detach();
@@ -248,13 +235,6 @@ int main(int argc, const char * argv[])
     memset(&stop, 0, sizeof(struct timeval));
     memset(&diff, 0, sizeof(struct timeval));
 
-    /*
-        std::thread send_thread(sendTd, thread_id);
-        send_thread.detach();
-
-        std::thread recv_thread(recvTd, thread_id);
-        recv_thread.detach();
-    **/
 
     iter_cnt = 0;
     calc_time = 0;
@@ -344,8 +324,6 @@ int main(int argc, const char * argv[])
 
 }
 
-
-#if TWO_SIDED_RDMA
 void InitContext()
 {
     for (int i = 0; i < CAP; i++)
@@ -357,7 +335,6 @@ void InitContext()
 
     }
 }
-#endif
 void LoadRmatrix(int file_no, map<long, double>& myMap)
 {
     char fn[100];
@@ -848,10 +825,6 @@ int wait4connection(char*local_ip, int local_port)
 
 }
 
-
-
-#if TWO_SIDED_RDMA
-
 void rdma_sendTd_loop(int send_thread_id)
 {
     char* remote_ip = remote_ips[send_thread_id % WORKER_N_1];
@@ -1003,4 +976,3 @@ void rdma_recvTd(int recv_thread_id)
     }
 
 }
-#endif

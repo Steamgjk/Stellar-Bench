@@ -30,37 +30,12 @@
 #include <map>
 
 
-#define TWO_SIDED_RDMA 1
-#define ONE_SIDED_RDMA 0
-
-#if TWO_SIDED_RDMA
 #include "rdma_two_sided_client_op.h"
 #include "rdma_two_sided_server_op.h"
-#endif
 
-#if ONE_SIDED_RDMA
-#include "server_rdma_op.h"
-#include "client_rdma_op.h"
-#endif
 
 using namespace std;
 #define CAP 2000
-//#define FILE_NAME "./netflix_row.txt"
-//#define TEST_NAME "./test_out.txt"
-//#define N  17770 // row number
-//#define M  2649429 //col number
-//#define K  40 //主题个数
-
-#define FILE_NAME "./movielen10M_train.txt"
-#define TEST_NAME "./movielen10M_test.txt"
-
-
-#define FILE_NAME "./mdata/traina-"
-#define TEST_NAME "./mdata/testa-"
-#define N 71567
-#define M 65133
-#define K  40 //主题个数
-
 
 #define FILE_NAME "./yahoo-output/train-"
 #define TEST_NAME "./yahoo-output/test"
@@ -68,10 +43,8 @@ using namespace std;
 #define M 624961
 #define K  100 //主题个数
 
-#if TWO_SIDED_RDMA
 struct client_context c_ctx[CAP];
 struct conn_context s_ctx[CAP];
-#endif
 
 #define QP_GROUP 1
 int send_round_robin_idx[CAP];
@@ -83,8 +56,6 @@ int local_ports[CAP] = {4411, 4412, 4413, 4414};
 char* remote_ips[CAP] = {"12.12.10.12", "12.12.10.15", "12.12.10.19", "12.12.10.17"};
 int remote_ports[CAP] = {5511, 5512, 5513, 5514};
 
-//double P[N][K];
-//double Q[K][M];
 
 
 
@@ -168,14 +139,9 @@ void sendTd(int send_thread_id);
 void recvTd(int recv_thread_id);
 void rdma_sendTd(int send_thread_id);
 void rdma_recvTd(int recv_thread_id);
-
-#if TWO_SIDED_RDMA
 void rdma_sendTd_loop(int send_thread_id);
 void rdma_recvTd_loop(int recv_thread_id);
 void InitContext();
-#endif
-
-
 void partitionP(int portion_num,  Block* Pblocks);
 void partitionQ(int portion_num,  Block* Qblocks);
 void InitFlag();
@@ -195,10 +161,7 @@ int main(int argc, const char * argv[])
         local_ports[i] = 10000 + i;
         remote_ports[i] = 20000 + i;
     }
-
-#if TWO_SIDED_RDMA
     InitContext();
-#endif
     //gen P and Q
     if (argc == 2)
     {
@@ -215,20 +178,15 @@ int main(int argc, const char * argv[])
             //std::thread recv_thread(recvTd, thid);
             //recv_thread.detach();
 
-#if TWO_SIDED_RDMA
             std::thread recv_loop_thread(rdma_recvTd_loop, thid);
             recv_loop_thread.detach();
-#endif
+
             std::thread recv_thread(rdma_recvTd, thid);
             recv_thread.detach();
 
         }
     }
 
-
-
-    //printf("wait for you for 5s\n");
-    //std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     for (int gp = 0; gp < QP_GROUP; gp++)
     {
         for (int send_thread_id = 0; send_thread_id < WORKER_NUM; send_thread_id++)
@@ -237,10 +195,9 @@ int main(int argc, const char * argv[])
             //std::thread send_thread(sendTd, thid);
             //send_thread.detach();
 
-#if TWO_SIDED_RDMA
             std::thread send_loop_thread(rdma_sendTd_loop, thid);
             send_loop_thread.detach();
-#endif
+
             std::thread send_thread(rdma_sendTd, thid);
             send_thread.detach();
 
@@ -386,7 +343,6 @@ int main(int argc, const char * argv[])
     return 0;
 }
 
-#if TWO_SIDED_RDMA
 void InitContext()
 {
     for (int i = 0; i < CAP; i++)
@@ -398,7 +354,7 @@ void InitContext()
 
     }
 }
-#endif
+
 void WriteLog(Block & Pb, Block & Qb, int iter_cnt)
 {
     char fn[100];
@@ -519,8 +475,6 @@ void partitionQ(int portion_num,  Block * Qblocks)
 }
 
 
-
-#if TWO_SIDED_RDMA
 void rdma_sendTd(int send_thread_id)
 {
     int mapped_thread_id = send_thread_id % WORKER_NUM;
@@ -664,6 +618,5 @@ void rdma_recvTd_loop(int recv_thread_id)
     rtos.rc_server_loop(str_port, &(s_ctx[recv_thread_id]));
 
 }
-#endif
 
 
