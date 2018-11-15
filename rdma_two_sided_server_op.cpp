@@ -76,6 +76,7 @@ void RdmaTwoSidedServerOp::server_on_connection(struct rdma_cm_id *id)
 
 void RdmaTwoSidedServerOp::server_on_completion(struct ibv_wc *wc)
 {
+  printf("server_on_completion...\n");
   struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
   struct conn_context *ctx = (struct conn_context *)id->context;
 
