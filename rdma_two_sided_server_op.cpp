@@ -113,6 +113,12 @@ void RdmaTwoSidedServerOp::server_on_completion(struct ibv_wc *wc)
       ctx->buf_len = size;
       ctx->buf_recv_counter++;
       printf("counter2 = %d\n", ctx->buf_recv_counter);
+      for (int kkk = 0; kkk < size; kkk++)
+      {
+        printf("%c", ctx->buffer[kkk] );
+      }
+      printf("\n");
+
       while (ctx->can_recv == false)
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
