@@ -202,12 +202,12 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
     }
     else if (event_copy.event == RDMA_CM_EVENT_CONNECT_REQUEST)
     {
-      printf("check 7\n");
+      printf("check7\n");
       client_build_connection(event_copy.id);
-      printf("check 9\n");
+      printf("check9\n");
       client_on_pre_conn(event_copy.id, s_ctx->pd);
 
-      printf("check 8\n");
+      printf("check8\n");
       TEST_NZ(rdma_accept(event_copy.id, &cm_params));
 
     }
@@ -318,7 +318,7 @@ void * RdmaTwoSidedClientOp::client_poll_cq(void* void_ch)
         client_on_completion(&wc);
       else
       {
-        printf("11client status=%d  IBV_WC_RETRY_EXC_ERR=%d\n", wc.status, IBV_WC_RETRY_EXC_ERR);
+        printf("client status=%d  IBV_WC_RETRY_EXC_ERR=%d\n", wc.status, IBV_WC_RETRY_EXC_ERR);
         rc_die("client poll_cq: status is not IBV_WC_SUCCESS");
       }
     }
