@@ -29,8 +29,8 @@ using namespace std;
 
 #define RIP "12.12.10.3"
 #define LIP "12.12.11.3"
-#define RPORT 4444
-#define LPORT 5555
+#define RPORT 5555
+#define LPORT 4444
 
 void rdma_sendTd_loop();
 void rdma_recvTd_loop();
