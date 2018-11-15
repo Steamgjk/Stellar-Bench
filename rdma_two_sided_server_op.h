@@ -14,7 +14,6 @@ struct conn_context
 	size_t buf_len;
 	bool buf_prepared;
 	bool buf_registered;
-	bool can_send;
 	struct ibv_mr *buffer_mr;
 
 	struct message *msg;

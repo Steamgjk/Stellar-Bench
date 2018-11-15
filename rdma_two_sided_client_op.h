@@ -12,6 +12,7 @@ struct client_context
 {
 	char *buffer;
 	size_t buf_len;
+	bool can_send;
 	bool buf_prepared;
 	bool buf_registered;
 	struct ibv_mr *buffer_mr;
