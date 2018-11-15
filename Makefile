@@ -1,4 +1,4 @@
-all: ps worker
+all: ps worker test_send test_recv
 CC=g++
 TARGET = ps
 TARGET1 = worker
