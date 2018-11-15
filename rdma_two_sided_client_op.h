@@ -15,8 +15,8 @@ struct client_context
 	bool can_send;
 	bool buf_prepared;
 	bool buf_registered;
+	int buf_write_counter;
 	struct ibv_mr *buffer_mr;
-
 	struct message *msg;
 	struct ibv_mr *msg_mr;
 
