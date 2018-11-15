@@ -8,7 +8,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
-#include <string.h>
+#include <string>
+#include <cstring>
 #include <cmath>
 #include <time.h>
 #include <vector>
@@ -37,13 +38,13 @@ struct client_context c_ctx;
 struct conn_context s_ctx;
 void rdma_sendTd_loop()
 {
-	char* remote_ip = RIP;
+	string remote_ip = RIP;
 	int remote_port = RPORT;
-	printf("remote_ip=%s  remote_port=%d\n", remote_ip, remote_port);
+	printf("remote_ip=%s  remote_port=%d\n", remote_ip.c_str(), remote_port);
 	char str_port[100];
 	sprintf(str_port, "%d", remote_port);
 	RdmaTwoSidedClientOp ct;
-	ct.rc_client_loop(remote_ip, str_port, &(c_ctx));
+	ct.rc_client_loop(remote_ip.c_str(), str_port, &(c_ctx));
 }
 
 void rdma_recvTd_loop()
