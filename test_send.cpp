@@ -82,6 +82,7 @@ int main(int argc, const char * argv[])
 			}
 			c_ctx.can_send = true;
 			to_send_counter++;
+			getchar();
 		}
 	}
 
