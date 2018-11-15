@@ -13,7 +13,7 @@ struct conn_context
 	char *buffer;
 	size_t buf_len;
 	bool can_recv;
-	bool buf_prepared;
+	int buf_recv_counter;
 	bool buf_registered;
 	struct ibv_mr *buffer_mr;
 	struct message *msg;

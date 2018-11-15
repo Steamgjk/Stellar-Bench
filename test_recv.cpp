@@ -59,13 +59,14 @@ void rdma_recvTd_loop()
 
 int main(int argc, const char * argv[])
 {
-	s_ctx.buf_prepared = false;
+	s_ctx.buf_recv_counter = 0;
 	s_ctx.can_recv = true;
 	std::thread recv_loop_thread(rdma_recvTd_loop);
 	recv_loop_thread.detach();
+	int read_counter = 0;
 	while (1 == 1)
 	{
-		if (s_ctx.buf_prepared == false)
+		if (read_counter <= s_ctx.buf_recv_counter)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		}
@@ -77,7 +78,7 @@ int main(int argc, const char * argv[])
 				printf("%c", s_ctx.buffer[i] );
 			}
 			printf("\n");
-			s_ctx.buf_prepared == false;
+			read_counter++;
 			s_ctx.can_recv = true;
 		}
 	}
