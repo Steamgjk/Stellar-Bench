@@ -179,25 +179,22 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
   struct rdma_conn_param cm_params;
 
   client_build_params(&cm_params);
-  printf("check 3\n");
+  printf("check3\n");
   while (rdma_get_cm_event(ec, &event) == 0)
   {
     struct rdma_cm_event event_copy;
 
     memcpy(&event_copy, event, sizeof(*event));
     rdma_ack_cm_event(event);
-    printf("check 4\n");
+    printf("check4\n");
     if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
     {
-      printf("check 5\n");
+      printf("check5\n");
       client_build_connection(event_copy.id);
-
-      printf("check 5.5\n");
+      printf("check5.5\n");
       client_on_pre_conn(event_copy.id, s_ctx->pd);
-      printf("check 6\n");
+      printf("check6\n");
       TEST_NZ(rdma_resolve_route(event_copy.id, TIMEOUT_IN_MS));
-
-
     }
     else if (event_copy.event == RDMA_CM_EVENT_ROUTE_RESOLVED)
     {
