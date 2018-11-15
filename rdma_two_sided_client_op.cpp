@@ -66,7 +66,7 @@ void RdmaTwoSidedClientOp::client_send_next_chunk(struct rdma_cm_id *id)
   //printf("check buf prepared\n");
   while (!ctx->buf_prepared)
   {
-    printf("to send has not well prepared\n");
+    //printf("to send has not well prepared\n");
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
   //printf("client send buf has been marked prepared = true\n");
@@ -116,16 +116,22 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
 
       //printf("received MR, sending file name(obsolete), send chunk\n");
       //send_file_name(id);
+      ctx->can_send = true;
       client_send_next_chunk(id);
+      ctx->can_send = false;
     }
     else if (ctx->msg->id == MSG_READY)
     {
       //printf("received READY, sending chunk\n");
+      ctx->can_send = true;
       client_send_next_chunk(id);
+      ctx->can_send = false;
     }
     else if (ctx->msg->id == MSG_DONE)
     {
+
       printf("received DONE, disconnecting\n");
+
       rc_disconnect(id);
       return;
     }

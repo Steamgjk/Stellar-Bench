@@ -59,5 +59,23 @@ void rdma_recvTd_loop()
 
 int main(int argc, const char * argv[])
 {
-	rdma_recvTd_loop();
+	s_ctx.buf_prepared = false;
+	std::thread recv_loop_thread(rdma_recvTd_loop);
+	recv_loop_thread.detach();
+	while (1 == 1)
+	{
+		if (s_ctx.buf_prepared == false)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		}
+		else
+		{
+			printf("len= %d\n", s_ctx.buf_len );
+			for (int i = 0; i < len; i++)
+			{
+				printf("%c", s_ctx.buffer[i] );
+			}
+			printf("\n");
+		}
+	}
 }

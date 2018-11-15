@@ -92,9 +92,9 @@ void RdmaTwoSidedServerOp::server_on_completion(struct ibv_wc *wc)
       ctx->buf_len = size;
       while (ctx->buf_prepared == true)
       {
-
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
-      //printf("server ctx has been marked false-0\n");
+      printf("server ctx has been marked false-0\n");
       server_send_message(id);
     }
     else
@@ -110,9 +110,9 @@ void RdmaTwoSidedServerOp::server_on_completion(struct ibv_wc *wc)
       ctx->buf_len = size;
       while (ctx->buf_prepared == true)
       {
-
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
-      //printf("server ctx has been marked false\n");
+      printf("server ctx has been marked false\n");
       ctx->msg->id = MSG_READY;
       server_send_message(id);
 
