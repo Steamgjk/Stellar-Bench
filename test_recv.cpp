@@ -60,6 +60,7 @@ void rdma_recvTd_loop()
 int main(int argc, const char * argv[])
 {
 	s_ctx.buf_prepared = false;
+	s_ctx.can_recv = true;
 	std::thread recv_loop_thread(rdma_recvTd_loop);
 	recv_loop_thread.detach();
 	while (1 == 1)
@@ -76,6 +77,8 @@ int main(int argc, const char * argv[])
 				printf("%c", s_ctx.buffer[i] );
 			}
 			printf("\n");
+			s_ctx.buf_prepared == false;
+			s_ctx.can_recv = true;
 		}
 	}
 }

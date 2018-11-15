@@ -88,12 +88,15 @@ void RdmaTwoSidedServerOp::server_on_completion(struct ibv_wc *wc)
       //ctx->msg->id = MSG_DONE;
       ctx->msg->id = MSG_READY;
       server_post_receive(id);
-      ctx->buf_prepared = true;
+
+      ctx->can_recv = false;
       ctx->buf_len = size;
-      while (ctx->buf_prepared == true)
+      ctx->buf_prepared = true;
+      while (ctx->can_recv == false)
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
+
       printf("server ctx has been marked false-0\n");
       server_send_message(id);
     }
@@ -106,9 +109,11 @@ void RdmaTwoSidedServerOp::server_on_completion(struct ibv_wc *wc)
       //printf("ctx->buffer=%p  %s\n", ctx->buffer, ctx->buffer );
       server_post_receive(id);
 
-      ctx->buf_prepared = true;
+      ctx->can_recv = false;
       ctx->buf_len = size;
-      while (ctx->buf_prepared == true)
+      ctx->buf_prepared = true;
+
+      while (ctx->can_recv == false)
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }

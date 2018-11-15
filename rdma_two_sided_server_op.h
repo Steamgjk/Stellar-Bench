@@ -12,10 +12,10 @@ struct conn_context
 {
 	char *buffer;
 	size_t buf_len;
+	bool can_recv;
 	bool buf_prepared;
 	bool buf_registered;
 	struct ibv_mr *buffer_mr;
-
 	struct message *msg;
 	struct ibv_mr *msg_mr;
 };
