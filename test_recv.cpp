@@ -63,6 +63,11 @@ int main(int argc, const char * argv[])
 	s_ctx.can_recv = true;
 	std::thread recv_loop_thread(rdma_recvTd_loop);
 	recv_loop_thread.detach();
+	while ( s_ctx.buf_registered == false)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}
+	printf("BUF registered!\n");
 	int read_counter = 0;
 	while (1 == 1)
 	{

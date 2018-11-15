@@ -68,7 +68,11 @@ int main(int argc, const char * argv[])
 	c_ctx.buf_write_counter = 0;
 	send_loop_thread.detach();
 
-	printf("before start\n");
+	while ( c_ctx.buf_registered == false)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	}
+	printf("BUF registered!\n");
 	//getchar();
 	while (1 == 1)
 	{
