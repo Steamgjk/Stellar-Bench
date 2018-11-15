@@ -62,24 +62,29 @@ int main(int argc, const char * argv[])
 	c_ctx.can_send = false;
 	c_ctx.buf_prepared = false;
 	c_ctx.buf_len = 100;
+	int to_send_counter = 0;
 	c_ctx.buffer = (char*)malloc(c_ctx.buf_len);
 	std::thread send_loop_thread(rdma_sendTd_loop);
+	c_ctx.buf_write_counter = 0;
 	send_loop_thread.detach();
-	for (int i = 0; i < 5; i++)
+	while (1 == 1)
 	{
-		if (c_ctx.can_send == false)
+		if (to_send_counter > c_ctx.buf_write_counter)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			printf("to_send_counter=%d buf_write_counter=%d\n", to_send_counter,  c_ctx.buf_write_counter);
 		}
 		else
 		{
 			for (int j = 0; j < c_ctx.buf_len; j++)
 			{
-				c_ctx.buffer[j] = 'a' + i;
+				c_ctx.buffer[j] = 'a' + to_send_counter;
 			}
-			c_ctx.buf_prepared = true;
+			c_ctx.can_send = true;
+			to_send_counter++;
 		}
 	}
+
 	while (1 == 1)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
