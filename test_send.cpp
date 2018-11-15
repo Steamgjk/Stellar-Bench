@@ -67,6 +67,9 @@ int main(int argc, const char * argv[])
 	std::thread send_loop_thread(rdma_sendTd_loop);
 	c_ctx.buf_write_counter = 0;
 	send_loop_thread.detach();
+
+	printf("before start\n");
+	getchar();
 	while (1 == 1)
 	{
 		if (to_send_counter > c_ctx.buf_write_counter)
