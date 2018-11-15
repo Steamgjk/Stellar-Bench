@@ -19,10 +19,9 @@ $(TARGET2): $(OBJS2)
 	$(CC) $(CFLAGS) -o $(TARGET1) $(OBJS1) $(LIBS)
 $(TARGET3): $(OBJS3)
 	$(CC) $(CFLAGS) -o $(TARGET1) $(OBJS1) $(LIBS)
-
-test_send.o test_send.cpp
+test_send.o: test_send.cpp
 	$(CC) $(CFLAGS) -c test_send.cpp
-test_recv.o test_recv.cpp
+test_recv.o: test_recv.cpp
 	$(CC) $(CFLAGS) -c test_recv.cpp
 worker.o: worker.cpp
 	$(CC) $(CFLAGS) -c worker.cpp
