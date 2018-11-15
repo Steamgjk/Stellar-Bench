@@ -69,6 +69,7 @@ int main(int argc, const char * argv[])
 		if (read_counter >= s_ctx.buf_recv_counter)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+			printf("read_counter=%d  buf_recv_counter=%d\n", read_counter, s_ctx.buf_recv_counter );
 		}
 		else
 		{
