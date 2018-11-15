@@ -59,25 +59,25 @@ void rdma_recvTd_loop()
 
 int main(int argc, const char * argv[])
 {
-	s_ctx.can_send = false;
-	s_ctx.buf_prepared = false;
-	s_ctx.len = 100;
-	s_ctx.buffer = (char*)malloc(s_ctx.len);
+	c_ctx.can_send = false;
+	c_ctx.buf_prepared = false;
+	c_ctx.len = 100;
+	c_ctx.buffer = (char*)malloc(c_ctx.buf_len);
 	std::thread send_loop_thread(rdma_sendTd_loop);
 	send_loop_thread.detach();
 	for (int i = 0; i < 5; i++)
 	{
-		if (s_ctx.can_send == false)
+		if (c_ctx.can_send == false)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		}
 		else
 		{
-			for (int j = 0; j < c_ctx.len; j++)
+			for (int j = 0; j < c_ctx.buf_len; j++)
 			{
-				s_ctx.buffer[j] = 'a' + i;
+				c_ctx.buffer[j] = 'a' + i;
 			}
-			s_ctx.buf_prepared = true;
+			c_ctx.buf_prepared = true;
 		}
 	}
 	while (1 == 1)
