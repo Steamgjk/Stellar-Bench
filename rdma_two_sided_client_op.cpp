@@ -125,20 +125,20 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
       }
       client_send_next_chunk(id);
       ctx->can_send = false;
-      //ctx->buf_write_counter++;
+      ctx->buf_write_counter++;
 
     }
     else if (ctx->msg->id == MSG_READY)
     {
       //printf("received READY, sending chunk\n");
-      ctx->buf_write_counter++;
+
       while (ctx->can_send == false)
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
-
       client_send_next_chunk(id);
       ctx->can_send = false;
+      ctx->buf_write_counter++;
 
     }
     else if (ctx->msg->id == MSG_DONE)
