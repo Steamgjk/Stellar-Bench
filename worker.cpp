@@ -57,7 +57,7 @@ int local_ports[CAP] = {5511, 5512, 5513, 5514};
 
 #define ThreshIter 1000
 #define SEQ_LEN 5000
-#define WORKER_THREAD_NUM 30
+#define WORKER_THREAD_NUM 1
 
 struct Block Pblock;
 struct Block Qblock;
