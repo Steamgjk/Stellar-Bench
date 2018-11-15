@@ -61,7 +61,7 @@ int main(int argc, const char * argv[])
 {
 	c_ctx.can_send = false;
 	c_ctx.buf_prepared = false;
-	c_ctx.len = 100;
+	c_ctx.buf_len = 100;
 	c_ctx.buffer = (char*)malloc(c_ctx.buf_len);
 	std::thread send_loop_thread(rdma_sendTd_loop);
 	send_loop_thread.detach();
