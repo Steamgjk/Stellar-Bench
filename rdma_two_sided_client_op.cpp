@@ -206,7 +206,6 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
       client_build_connection(event_copy.id);
       printf("check9\n");
       client_on_pre_conn(event_copy.id, s_ctx->pd);
-
       printf("check8\n");
       TEST_NZ(rdma_accept(event_copy.id, &cm_params));
 

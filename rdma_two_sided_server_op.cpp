@@ -154,7 +154,7 @@ void RdmaTwoSidedServerOp::rc_server_loop(const char *port, struct conn_context*
   TEST_NZ(rdma_create_id(ec, &listener, NULL, RDMA_PS_TCP));
   TEST_NZ(rdma_bind_addr(listener, (struct sockaddr *)&addr));
   TEST_NZ(rdma_listen(listener, 10)); /* backlog=10 is arbitrary */
-
+  printf("server listenning... port = %ld\n", addr.sin6_port);
   server_event_loop(ec, 0, ctx); // don't exit on disconnect
 
   rdma_destroy_id(listener);
@@ -177,7 +177,7 @@ void RdmaTwoSidedServerOp::server_event_loop(struct rdma_event_channel *ec, int 
 
     memcpy(&event_copy, event, sizeof(*event));
     rdma_ack_cm_event(event);
-
+    printf("Server Loop...\n");
     if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
     {
       server_build_connection(event_copy.id);
