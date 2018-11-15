@@ -69,7 +69,7 @@ int main(int argc, const char * argv[])
 	send_loop_thread.detach();
 
 	printf("before start\n");
-	getchar();
+	//getchar();
 	while (1 == 1)
 	{
 		if (to_send_counter > c_ctx.buf_write_counter)
