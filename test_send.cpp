@@ -83,7 +83,7 @@ int main(int argc, const char * argv[])
 			printf("to send ready\n");
 			for (int j = 0; j < c_ctx.buf_len; j++)
 			{
-				printf("%c\n", c_ctx.buffer[j] );
+				printf("%c", c_ctx.buffer[j] );
 			}
 			printf("\n");
 			c_ctx.can_send = true;
