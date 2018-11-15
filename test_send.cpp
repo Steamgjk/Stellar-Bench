@@ -80,6 +80,12 @@ int main(int argc, const char * argv[])
 			{
 				c_ctx.buffer[j] = 'a' + to_send_counter;
 			}
+			printf("to send ready\n");
+			for (int j = 0; j < c_ctx.buf_len; j++)
+			{
+				printf("%c\n", c_ctx.buffer[j] );
+			}
+			printf("\n");
 			c_ctx.can_send = true;
 			to_send_counter++;
 			getchar();

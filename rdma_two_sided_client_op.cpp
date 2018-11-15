@@ -123,6 +123,13 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
+      printf("Before send chunk\n");
+      for (int ii = 0; ii < ctx->buf_len; ii++)
+      {
+        printf("%c", ctx->buffer[ii] );
+      }
+      printf("\n");
+
       client_send_next_chunk(id);
       printf("send chunk1\n");
       ctx->can_send = false;
