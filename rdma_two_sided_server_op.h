@@ -14,6 +14,7 @@ struct conn_context
 	size_t buf_len;
 	bool can_recv;
 	int buf_recv_counter;
+	bool buf_prepared; //deprecated
 	bool buf_registered;
 	struct ibv_mr *buffer_mr;
 	struct message *msg;
