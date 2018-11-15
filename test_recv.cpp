@@ -27,8 +27,8 @@
 #include "rdma_two_sided_server_op.h"
 using namespace std;
 
-#define RIP "12.12.10.3"
-#define LIP "12.12.11.3"
+#define RIP "12.12.10.13"
+#define LIP "12.12.11.13"
 #define RPORT 5555
 #define LPORT 4444
 
