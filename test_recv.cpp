@@ -71,7 +71,7 @@ int main(int argc, const char * argv[])
 		else
 		{
 			printf("len= %d\n", s_ctx.buf_len );
-			for (int i = 0; i < len; i++)
+			for (int i = 0; i < s_ctx.buf_len; i++)
 			{
 				printf("%c", s_ctx.buffer[i] );
 			}
