@@ -347,7 +347,7 @@ void * RdmaTwoSidedClientOp::client_poll_cq(void* void_ch)
       else
       {
         printf("client status=%d  IBV_WC_RETRY_EXC_ERR=%d\n", wc.status, IBV_WC_RETRY_EXC_ERR);
-        rc_die("client poll_cq: status is not IBV_WC_SUCCESS");
+        //rc_die("client poll_cq: status is not IBV_WC_SUCCESS");
       }
     }
   }
