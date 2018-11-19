@@ -216,8 +216,7 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
     memcpy(&event_copy, event, sizeof(*event));
     rdma_ack_cm_event(event);
     printf("check4\n");
-    if (event_copy.event == RDMA_CM_
-        EVENT_ADDR_RESOLVED)
+    if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
     {
       printf("check5\n");
       client_build_connection(event_copy.id);
@@ -230,7 +229,7 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
     {
       printf("to rdma_connect...\n");
       TEST_NZ(rdma_connect(event_copy.id, &cm_params));
-      printf("rdma_connect comp\n");
+      printf("rdma_connect  completed...\n");
     }
     else if (event_copy.event == RDMA_CM_EVENT_CONNECT_REQUEST)
     {
@@ -264,7 +263,7 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
     }
     else
     {
-      //rc_die("unknown event\n");
+      rc_die("unknown event\n");
     }
   }
 }
