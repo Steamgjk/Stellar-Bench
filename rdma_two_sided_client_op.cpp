@@ -215,7 +215,7 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
 
     memcpy(&event_copy, event, sizeof(*event));
     rdma_ack_cm_event(event);
-    printf("check4\n");
+    printf("check4  EVENT=%d\n", event_copy.event);
     if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
     {
       printf("check5\n");
