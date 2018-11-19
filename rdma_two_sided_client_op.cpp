@@ -261,7 +261,7 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
     }
     else
     {
-      rc_die("unknown event\n");
+      //rc_die("unknown event\n");
     }
   }
 }
