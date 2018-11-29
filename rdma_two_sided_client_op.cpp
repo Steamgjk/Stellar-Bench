@@ -116,7 +116,7 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
       ctx->peer_addr = ctx->msg->data.mr.addr;
       ctx->peer_rkey = ctx->msg->data.mr.rkey;
 
-      //printf("received MR, sending file name(obsolete), send chunk\n");
+      printf("received MR,send chunk\n");
       //send_file_name(id);
 
       while (ctx->can_send == false)
@@ -140,7 +140,7 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
     }
     else if (ctx->msg->id == MSG_READY)
     {
-      //printf("received READY, sending chunk\n");
+      printf("received READY, sending chunk\n");
 
       while (ctx->can_send == false)
       {
