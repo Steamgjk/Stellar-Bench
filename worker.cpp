@@ -175,10 +175,15 @@ int main(int argc, const char * argv[])
             int col_len = Qblock.height;
             int ele_num = row_len * col_len;
             //printf("before submf\n");
-            submf();
+            //submf();
             //printf("after submf\n");
             completed_iter = iter_t;
             iter_t++;
+        }
+        else
+        {
+            printf("iter_t=%d  recved_age=%d\n", iter_t, recved_age);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
 
