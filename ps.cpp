@@ -140,7 +140,7 @@ int main(int argc, const char * argv[])
     while (1 == 1)
     {
         can_continue = CanMerge(iter_t, recved_iter, worker_num);
-        printf("heheh can_continue=%d\n", can_continue);
+        //printf("heheh can_continue=%d\n", can_continue);
         if (can_continue == false)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -193,7 +193,7 @@ bool CanMerge(int coming_iter, int r_iter[], int len)
 }
 bool CanSend(int sended_age, int completed_age)
 {
-    printf("sended_age=%d  completed_age=%d\n", sended_age, completed_age );
+    //printf("sended_age=%d  completed_age=%d\n", sended_age, completed_age );
     if (sended_age <= completed_age)
     {
         return true;
