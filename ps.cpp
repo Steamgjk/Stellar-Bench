@@ -395,6 +395,7 @@ void rdma_recvTd(int recv_thread_id)
         //this buf I have read it, so please prepare new buf content
         s_ctx[recv_thread_id].buf_prepared = false;
         recved_iter[recv_thread_id]++;
+        s_ctx[recv_thread_id].can_recv = false;
     }
 }
 
