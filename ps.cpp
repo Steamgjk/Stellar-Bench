@@ -195,6 +195,7 @@ bool CanMerge(int coming_iter, int r_iter[], int len)
 }
 bool CanSend(int sended_age, int completed_age)
 {
+    printf("sended_age=%d  completed_age=%d\n", sended_age, completed_age );
     if (sended_age <= completed_age)
     {
         return true;
