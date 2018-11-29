@@ -508,11 +508,13 @@ void rdma_sendTd(int send_thread_id)
 {
 
     size_t struct_sz = sizeof(Block);
+    /*
     while (c_ctx[send_thread_id].buf_registered == false)
     {
         //printf("[%d] has not registered buffer\n", send_thread_id);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
+    **/
     printf("[%d] has registered send buffer\n", send_thread_id);
     while (1 == 1)
     {
@@ -533,9 +535,12 @@ void rdma_sendTd(int send_thread_id)
             memcpy(buf + p_total + struct_sz , (char*) & (Qblock.eles), q_data_sz);
             c_ctx[send_thread_id].buf_len = total_len;
             c_ctx[send_thread_id].buf_prepared = true;
-
-
             sended_age++;
+        }
+        else
+        {
+            printf("completed_iter=%d sended_age=%d\n", completed_iter, sended_age );
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
     }
@@ -553,13 +558,21 @@ void rdma_recvTd(int recv_thread_id)
     printf("[%d] has registered receive buffer\n", recv_thread_id);
     while (1 == 1)
     {
+        //buf_recv_counter
+        if (recved_age >= s_ctx[recv_thread_id].buf_recv_counter)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            continue;
 
+        }
+        /*
         if (s_ctx[recv_thread_id].buf_prepared == false)
         {
             //printf("[%d] recv buf prepared = false\n", recv_thread_id );
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
+        **/
 
         char* real_sta_buf = s_ctx[recv_thread_id].buffer;
 

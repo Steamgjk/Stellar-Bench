@@ -321,6 +321,7 @@ void rdma_sendTd(int send_thread_id)
             c_ctx[send_thread_id].can_send = true;
             printf("should have sent...\n");
             sended_iter[send_thread_id]++;
+            getchar();
         }
 
     }
