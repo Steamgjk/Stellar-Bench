@@ -97,6 +97,9 @@ int main(int argc, const char * argv[])
         recv_thread.detach();
     }
 
+    getchar();
+
+
     for (thid = 0; thid < worker_num; thid++)
     {
         std::thread send_loop_thread(rdma_sendTd_loop, thid);
@@ -105,9 +108,6 @@ int main(int argc, const char * argv[])
         send_thread.detach();
     }
 
-    printf("wait for 3s\n");
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     srand(1);
     //LoadTestRating();
     //printf("Load Complete\n");
