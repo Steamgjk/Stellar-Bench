@@ -361,7 +361,7 @@ void rdma_recvTd(int recv_thread_id)
         Pblocks[block_idx].sta_idx = pb->sta_idx;
         Pblocks[block_idx].height = pb->height;
         Pblocks[block_idx].ele_num = pb->ele_num;
-        Pblocks[block_idx].eles = Malloc(double, pb->ele_num);
+        //Pblocks[block_idx].eles = Malloc(double, pb->ele_num);
         Pblocks[block_idx].isP = pb->isP;
         double*data_eles = (double*)(void*) (real_sta_buf + struct_sz);
         size_t data_sz = pb->ele_num * sizeof(double);
@@ -383,7 +383,7 @@ void rdma_recvTd(int recv_thread_id)
         Qblocks[block_idx].sta_idx = qb->sta_idx;
         Qblocks[block_idx].height = qb->height;
         Qblocks[block_idx].ele_num = qb->ele_num;
-        Qblocks[block_idx].eles = Malloc(double, qb->ele_num);
+        //Qblocks[block_idx].eles = Malloc(double, qb->ele_num);
         Qblocks[block_idx].isP = qb->isP;
         memcpy(Qblocks[block_idx].eles, data_eles, data_sz);
         /*
@@ -396,6 +396,7 @@ void rdma_recvTd(int recv_thread_id)
         s_ctx[recv_thread_id].buf_prepared = false;
         recved_iter[recv_thread_id]++;
         printf("recved_iter[%d]=%d\n", recv_thread_id, recved_iter[recv_thread_id]  );
+        /////////////////////////////
         s_ctx[recv_thread_id].can_recv = true;
     }
 }
