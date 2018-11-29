@@ -144,6 +144,11 @@ int main(int argc, const char * argv[])
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
+        else
+        {
+            printf("hehhe\n");
+            printf("%d\n", CanMerge(iter_t, recved_iter, worker_num));
+        }
         printf("iter_t = %d recv_iter =%d\n", iter_t, recved_iter[0]);
         getchar();
 
