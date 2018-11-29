@@ -138,16 +138,14 @@ int main(int argc, const char * argv[])
     struct timeval beg, ed;
     iter_t = 0;
     gettimeofday(&beg, 0);
+    bool can_continue = false;
     while (1 == 1)
     {
-        if (false == CanMerge(iter_t, recved_iter, worker_num))
+        can_continue = CanMerge(iter_t, recved_iter, worker_num);
+        printf("heheh can_continue=%d\n", can_continue);
+        if (can_continue == false)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-        else
-        {
-            printf("hehhe\n");
-            printf("%d\n", CanMerge(iter_t, recved_iter, worker_num));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
         printf("iter_t = %d recv_iter =%d\n", iter_t, recved_iter[0]);
         getchar();
