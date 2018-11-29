@@ -297,7 +297,7 @@ void rdma_sendTd(int send_thread_id)
     {
         if (false == CanSend(sended_iter[send_thread_id], completed_iter) )
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
         }
 
@@ -317,8 +317,9 @@ void rdma_sendTd(int send_thread_id)
             memcpy(real_sta_buf + p_total, &(Qblocks[qbid]), struct_sz);
             memcpy(real_sta_buf + p_total + struct_sz , (char*) & (Qblocks[qbid].eles[0]), q_data_sz);
             c_ctx[send_thread_id].buf_len = total_len;
-            c_ctx[send_thread_id].buf_prepared = true;
-
+            c_ctx[send_thread_id].buf_prepared = true; //maybe deprecated
+            c_ctx[send_thread_id].can_send = true;
+            printf("should have sent...\n");
             sended_iter[send_thread_id]++;
         }
 
