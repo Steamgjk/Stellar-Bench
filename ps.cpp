@@ -96,6 +96,8 @@ int main(int argc, const char * argv[])
         std::thread recv_thread(rdma_recvTd, thid);
         recv_thread.detach();
     }
+    printf("get char....\n");
+    getchar();
 
     for (thid = 0; thid < worker_num; thid++)
     {

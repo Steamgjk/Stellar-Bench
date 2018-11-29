@@ -207,12 +207,13 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
   struct rdma_cm_event *event = NULL;
   struct rdma_conn_param cm_params;
 
+//maybe should go to here
   client_build_params(&cm_params);
   printf("check3\n");
   while (rdma_get_cm_event(ec, &event) == 0)
   {
     struct rdma_cm_event event_copy;
-
+//maybe should go to here
     memcpy(&event_copy, event, sizeof(*event));
     rdma_ack_cm_event(event);
     printf("check4  EVENT=%d\n", event_copy.event);
