@@ -121,6 +121,8 @@ int main(int argc, const char * argv[])
     }
     int th_id = thread_id;
     printf("recv th_id=%d\n", th_id );
+    InitContext();
+
     std::thread recv_loop_thread(rdma_recvTd_loop, th_id);
     recv_loop_thread.detach();
     std::thread recv_thread(rdma_recvTd, th_id);
@@ -131,7 +133,6 @@ int main(int argc, const char * argv[])
     std::thread send_loop_thread(rdma_sendTd_loop, th_id);
     send_loop_thread.detach();
     std::thread send_thread(rdma_sendTd, th_id);
-    //std::thread send_thread(sendTd, thread_id);
     send_thread.detach();
 
     StartCalcUpdt.resize(WORKER_THREAD_NUM);
@@ -211,9 +212,11 @@ void InitContext()
     {
         c_ctx[i].buf_prepared = false;
         c_ctx[i].buf_registered = false;
+        c_ctx[i].buf_write_counter = 0;
+
         s_ctx[i].buf_prepared = false;
         s_ctx[i].buf_registered = false;
-
+        s_ctx[i].buf_recv_counter = 0;
     }
 }
 
@@ -294,8 +297,6 @@ void CalcUpdt(int td_id)
             ctsz = hash_for_col_threads[p_block_idx][q_block_idx][td_id].size();
             if (rtsz == 0 || ctsz == 0)
             {
-                //printf("p %d q %d td=%d empty\n", p_block_idx, q_block_idx, td_id );
-                //exit(0);
                 StartCalcUpdt[td_id] = false;
                 continue;
             }

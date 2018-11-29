@@ -96,8 +96,6 @@ int main(int argc, const char * argv[])
         std::thread recv_thread(rdma_recvTd, thid);
         recv_thread.detach();
     }
-    printf("get char....\n");
-    getchar();
 
     for (thid = 0; thid < worker_num; thid++)
     {
@@ -212,8 +210,11 @@ void InitContext()
     {
         c_ctx[i].buf_prepared = false;
         c_ctx[i].buf_registered = false;
+        c_ctx[i].buf_write_counter = 0;
+
         s_ctx[i].buf_prepared = false;
         s_ctx[i].buf_registered = false;
+        s_ctx[i].buf_recv_counter = 0;
 
     }
 }
@@ -304,7 +305,6 @@ void rdma_sendTd(int send_thread_id)
         {
             int pbid = worker_pidx[send_thread_id];
             int qbid = worker_qidx[send_thread_id];
-            //printf("%d] canSend pbid=%d  qbid=%d sid=%d\n", send_thread_id, pbid, qbid, send_thread_id % WORKER_NUM );
             size_t p_data_sz = sizeof(double) * Pblocks[pbid].ele_num;
             size_t p_total = struct_sz + p_data_sz;
             size_t q_data_sz = sizeof(double) * Qblocks[qbid].ele_num;
@@ -339,14 +339,21 @@ void rdma_recvTd(int recv_thread_id)
     while (1 == 1)
     {
 
-        if (s_ctx[recv_thread_id].buf_prepared == false)
+        /*
+                if (s_ctx[recv_thread_id].buf_prepared == false)
+                {
+                    //printf("[%d] recv buf_prepared = false\n", recv_thread_id );
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    continue;
+                }
+                **/
+
+        if (recved_iter[recv_thread_id] >= s_ctx[recv_thread_id].buf_recv_counter)
         {
-            //printf("[%d] recv buf_prepared = false\n", recv_thread_id );
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
         }
-        //printf("[%d] recv buf_prepared = true\n", recv_thread_id );
-
+        printf("will recv [%d] [%d]\n", recv_thread_id, recved_iter[recv_thread_id]);
         char* real_sta_buf = s_ctx[recv_thread_id].buffer;
         struct Block * pb = (struct Block*)(void*)(real_sta_buf);
         int block_idx = pb->block_id ;
