@@ -144,6 +144,9 @@ int main(int argc, const char * argv[])
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
+        printf("iter_t = %d recv_iter =%d\n", iter_t, recved_iter[0]);
+        getchar();
+
         srand(time(0));
         random_shuffle(worker_qidx, worker_qidx + worker_num); //迭代器
         for (int i = 0; i < worker_num; i++)
