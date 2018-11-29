@@ -182,6 +182,10 @@ bool CanMerge(int coming_iter, int r_iter[], int len)
         {
             return false;
         }
+        else
+        {
+            printf("coming_iter=%d  r=%d\n", coming_iter, r_iter[i] );
+        }
     }
     return true;
 }
