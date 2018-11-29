@@ -396,7 +396,7 @@ void rdma_recvTd(int recv_thread_id)
         s_ctx[recv_thread_id].buf_prepared = false;
         recved_iter[recv_thread_id]++;
         printf("recved_iter[%d]=%d\n", recv_thread_id, recved_iter[recv_thread_id]  );
-        s_ctx[recv_thread_id].can_recv = false;
+        s_ctx[recv_thread_id].can_recv = true;
     }
 }
 
