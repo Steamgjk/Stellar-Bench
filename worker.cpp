@@ -182,7 +182,7 @@ int main(int argc, const char * argv[])
         }
         else
         {
-            printf("iter_t=%d  recved_age=%d\n", iter_t, recved_age);
+            printf("NO iter_t=%d  recved_age=%d\n", iter_t, recved_age);
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
@@ -535,10 +535,10 @@ void rdma_sendTd(int send_thread_id)
             size_t total_len = p_total + q_total;
             char* buf = c_ctx[send_thread_id].buffer;
             memcpy(buf, &(Pblock), struct_sz);
-            memcpy(buf + struct_sz, (char*) & (Pblock.eles), p_data_sz);
+            memcpy(buf + struct_sz, (Pblock.eles), p_data_sz);
 
             memcpy(buf + p_total, &(Qblock), struct_sz);
-            memcpy(buf + p_total + struct_sz , (char*) & (Qblock.eles), q_data_sz);
+            memcpy(buf + p_total + struct_sz , (Qblock.eles), q_data_sz);
             c_ctx[send_thread_id].buf_len = total_len;
             c_ctx[send_thread_id].buf_prepared = true;
             sended_age++;
