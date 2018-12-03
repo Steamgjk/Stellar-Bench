@@ -65,9 +65,6 @@ double* oldP;
 double* oldQ;
 vector<long> hash_ids;
 std::vector<long> rates;
-
-bool canSend = false;
-bool hasRecved = false;
 int block_seq[SEQ_LEN];
 
 
@@ -84,9 +81,9 @@ void WriteLog(Block&Pb, Block&Qb, int iter_cnt);
 void LoadRmatrix(int file_no, map<long, double>& myMap);
 void CalcUpdt(int thread_id);
 void LoadData();
-void InitFlag();
 bool CanCompute(int coming_iter, int recved_age);
 bool CanPush(int completed_iter, int sended_age);
+bool CanSend(int to_send_iter, int completed_age);
 
 int thread_id = -1;
 struct timeval start, stop, diff;
@@ -99,7 +96,7 @@ std::vector<long> hash_for_col_threads[10][10][WORKER_THREAD_NUM];
 std::vector<double> rates_for_col_threads[10][10][WORKER_THREAD_NUM];
 int iter_t = 0;
 int recved_age = -1;
-int sended_age = -1;
+int to_send_age = 0;
 int completed_iter = -1;
 
 long long calcTimes[2000];
@@ -122,7 +119,6 @@ int main(int argc, const char * argv[])
     int th_id = thread_id;
     printf("recv th_id=%d\n", th_id );
     InitContext();
-
     std::thread recv_loop_thread(rdma_recvTd_loop, th_id);
     recv_loop_thread.detach();
     std::thread recv_thread(rdma_recvTd, th_id);
@@ -140,7 +136,6 @@ int main(int argc, const char * argv[])
     {
         StartCalcUpdt[i] = false;
     }
-    canSend = false;
     memset(&start, 0, sizeof(struct timeval));
     memset(&stop, 0, sizeof(struct timeval));
     memset(&diff, 0, sizeof(struct timeval));
@@ -192,6 +187,17 @@ int main(int argc, const char * argv[])
 bool CanCompute(int coming_iter, int recved_age)
 {
     if (coming_iter <= recved_age)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+bool CanSend(int to_send_iter, int completed_age)
+{
+    if (to_send_iter == completed_age)
     {
         return true;
     }
@@ -525,7 +531,7 @@ void rdma_sendTd(int send_thread_id)
     while (1 == 1)
     {
         //printf("canSend=%d\n", canSend );
-        if (true == CanPush(completed_iter, sended_age))
+        if (true == CanSend(to_send_iter, completed_iter))
         {
             printf("Td:%d cansend\n", thread_id );
             size_t p_data_sz = sizeof(double) * Pblock.ele_num;
@@ -536,16 +542,15 @@ void rdma_sendTd(int send_thread_id)
             char* buf = c_ctx[send_thread_id].buffer;
             memcpy(buf, &(Pblock), struct_sz);
             memcpy(buf + struct_sz, (Pblock.eles), p_data_sz);
-
             memcpy(buf + p_total, &(Qblock), struct_sz);
             memcpy(buf + p_total + struct_sz , (Qblock.eles), q_data_sz);
             c_ctx[send_thread_id].buf_len = total_len;
             c_ctx[send_thread_id].buf_prepared = true;
-            sended_age++;
+            to_send_iter++;
         }
         else
         {
-            printf("completed_iter=%d sended_age=%d\n", completed_iter, sended_age );
+            printf("completed_iter=%d to_send_iter=%d\n", completed_iter, to_send_iter );
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 

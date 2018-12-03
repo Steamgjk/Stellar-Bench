@@ -60,14 +60,12 @@ void rdma_recvTd(int recv_thread_id);
 void rdma_sendTd_loop(int send_thread_id);
 void rdma_recvTd_loop(int recv_thread_id);
 void InitContext();
-void partitionP(int portion_num,  Block* Pblocks);
-void partitionQ(int portion_num,  Block* Qblocks);
-void InitFlag();
 bool CanMerge(int coming_iter, int r_iter[], int len);
+bool CanSend(int to_send_iter, int completed_age);
 void partitionBlock(int rc_num, int dim, int portion_num,  Block * Blocks);
 
 int recved_iter[CAP];
-int sended_iter[CAP];
+int to_send_iter[CAP];
 int worker_pidx[CAP];
 int worker_qidx[CAP];
 long long time_span[300];
@@ -129,7 +127,7 @@ int main(int argc, const char * argv[])
     for (int i = 0; i < worker_num; i++)
     {
         recved_iter[i] = -1;
-        sended_iter[i] = -1;
+        to_send_iter[i] = -1;
         worker_pidx[i] = worker_qidx[i] = i;
     }
 
@@ -191,10 +189,10 @@ bool CanMerge(int coming_iter, int r_iter[], int len)
     }
     return true;
 }
-bool CanSend(int sended_age, int completed_age)
+bool CanSend(int to_send_iter, int completed_age)
 {
-    //printf("sended_age=%d  completed_age=%d\n", sended_age, completed_age );
-    if (sended_age <= completed_age)
+    //printf("to_send_iter=%d  completed_age=%d\n", to_send_iter, completed_age );
+    if (to_send_iter <= completed_age)
     {
         return true;
     }
@@ -296,7 +294,7 @@ void rdma_sendTd(int send_thread_id)
     printf("[%d] has registered send buffer\n", send_thread_id);
     while (1 == 1)
     {
-        if (false == CanSend(sended_iter[send_thread_id], completed_iter) )
+        if (false == CanSend(to_send_iter[send_thread_id], completed_iter) )
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
@@ -319,8 +317,8 @@ void rdma_sendTd(int send_thread_id)
             c_ctx[send_thread_id].buf_len = total_len;
             c_ctx[send_thread_id].buf_prepared = true; //maybe deprecated
             c_ctx[send_thread_id].can_send = true;
-            sended_iter[send_thread_id]++;
-            printf("should have sent... sended[%d]=%d\n", send_thread_id, sended_iter[send_thread_id]);
+            to_send_iter[send_thread_id]++;
+            printf("should have sent... to_send_iter[%d]=%d\n", send_thread_id, to_send_iter[send_thread_id]);
             //getchar();
         }
 
