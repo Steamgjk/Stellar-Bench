@@ -547,11 +547,12 @@ void rdma_sendTd(int send_thread_id)
             memcpy(buf + p_total + struct_sz , (Qblock.eles), q_data_sz);
             c_ctx[send_thread_id].buf_len = total_len;
             c_ctx[send_thread_id].buf_prepared = true;
+            printf("should have sent %d\n", to_send_age );
             to_send_age++;
         }
         else
         {
-            printf("completed_iter=%d to_send_age=%d\n", completed_iter, to_send_age );
+            //printf("completed_iter=%d to_send_age=%d\n", completed_iter, to_send_age );
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
