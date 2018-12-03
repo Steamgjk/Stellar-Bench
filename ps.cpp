@@ -334,7 +334,7 @@ void rdma_recvTd(int recv_thread_id)
     {
 
 
-        int to_recv_iter = recved_iter[recv_thread_id];
+        int to_recv_iter = recved_iter[recv_thread_id] + 1;
         if (fal)
         {
             printf("to_recv_iter=%d  recv_thread_id=%d  buf_recv_counter=%d\n", to_recv_iter, recv_thread_id, s_ctx[recv_thread_id].buf_recv_counter  );
