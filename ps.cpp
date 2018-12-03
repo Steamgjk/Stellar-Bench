@@ -345,7 +345,7 @@ void rdma_recvTd(int recv_thread_id)
 
         int to_recv_iter = recved_iter[recv_thread_id];
 
-        if (to_recv_iter > s_ctx[recv_thread_id].buf_recv_counter)
+        if (to_recv_iter > s_ctx[recv_thread_id].buf_recv_counter - 1)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
