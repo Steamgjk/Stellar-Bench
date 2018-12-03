@@ -329,12 +329,18 @@ void rdma_recvTd(int recv_thread_id)
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
     printf("[%d] has registered receive buffer\n", recv_thread_id);
+    bool fal = true;
     while (1 == 1)
     {
 
 
         int to_recv_iter = recved_iter[recv_thread_id];
-        printf("to_recv_iter=%d  recv_thread_id=%d  buf_recv_counter=%d\n", to_recv_iter, recv_thread_id, s_ctx[recv_thread_id].buf_recv_counter  );
+        if (fal)
+        {
+            printf("to_recv_iter=%d  recv_thread_id=%d  buf_recv_counter=%d\n", to_recv_iter, recv_thread_id, s_ctx[recv_thread_id].buf_recv_counter  );
+            fal = false;
+        }
+
         if (to_recv_iter > s_ctx[recv_thread_id].buf_recv_counter - 1)
         {
 
@@ -379,6 +385,8 @@ void rdma_recvTd(int recv_thread_id)
         /////////////////////////////
         s_ctx[recv_thread_id].can_recv = true;
         //getchar();
+
+        fal = true;
     }
 }
 
