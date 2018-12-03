@@ -144,7 +144,7 @@ void RdmaTwoSidedServerOp::server_on_disconnect(struct rdma_cm_id *id)
   free(ctx->buffer);
   free(ctx->msg);
 
-  printf("finished transferring\n");
+  //printf("finished transferring\n");
 
   //free(ctx);
 }
@@ -153,7 +153,7 @@ void RdmaTwoSidedServerOp::server_on_disconnect(struct rdma_cm_id *id)
 
 void RdmaTwoSidedServerOp::rc_server_loop(const char *port, struct conn_context* ctx)
 {
-  printf("rc_server_loop ctx =%p\n", ctx );
+  //printf("rc_server_loop ctx =%p\n", ctx );
   struct sockaddr_in6 addr;
   struct rdma_cm_id *listener = NULL;
   struct rdma_event_channel *ec = NULL;
@@ -189,7 +189,7 @@ void RdmaTwoSidedServerOp::server_event_loop(struct rdma_event_channel *ec, int 
 
     memcpy(&event_copy, event, sizeof(*event));
     rdma_ack_cm_event(event);
-    printf("Server Loop...\n");
+    //printf("Server Loop...\n");
     if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
     {
       server_build_connection(event_copy.id);

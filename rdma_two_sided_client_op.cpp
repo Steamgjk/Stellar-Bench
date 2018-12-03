@@ -133,21 +133,21 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
       **/
 
       client_send_next_chunk(id);
-      printf("send chunk1\n");
+      //printf("send chunk1\n");
       ctx->can_send = false;
       ctx->buf_write_counter++;
 
     }
     else if (ctx->msg->id == MSG_READY)
     {
-      printf("received READY, sending chunk\n");
+      //printf("received READY, sending chunk\n");
 
       while (ctx->can_send == false)
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
       client_send_next_chunk(id);
-      printf("send chunk2\n");
+      //printf("send chunk2\n");
       ctx->can_send = false;
       ctx->buf_write_counter++;
 
@@ -155,14 +155,14 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
     else if (ctx->msg->id == MSG_DONE)
     {
 
-      printf("received DONE, disconnecting\n");
+      //printf("received DONE, disconnecting\n");
 
       rc_disconnect(id);
       return;
     }
     else
     {
-      printf("Comehere \n");
+      //printf("Comehere \n");
     }
 
     client_post_receive(id);
@@ -177,7 +177,7 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
 
 void RdmaTwoSidedClientOp::rc_client_loop(const char *host, const char *port, void *context)
 {
-  printf("enter rc_client_loop\n");
+  //printf("enter rc_client_loop\n");
   struct addrinfo *addr;
   struct rdma_cm_id *conn = NULL;
   struct rdma_event_channel *ec = NULL;
