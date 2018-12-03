@@ -346,13 +346,15 @@ void rdma_recvTd(int recv_thread_id)
                     continue;
                 }
                 **/
-
+        printf("will recv [%d] [%d]\n", recv_thread_id, recved_iter[recv_thread_id]);
         if (recved_iter[recv_thread_id] >= s_ctx[recv_thread_id].buf_recv_counter)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
         }
-        printf("will recv [%d] [%d]\n", recv_thread_id, recved_iter[recv_thread_id]);
+        getchar();
+
+
         char* real_sta_buf = s_ctx[recv_thread_id].buffer;
         struct Block * pb = (struct Block*)(void*)(real_sta_buf);
         int block_idx = pb->block_id ;
