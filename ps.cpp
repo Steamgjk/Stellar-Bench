@@ -281,6 +281,7 @@ void partitionBlock(int rc_num, int dim, int portion_num,  Block * Blocks)
         Blocks[i].ele_num = Blocks[i].height * dim;
         Blocks[i].eles = Malloc(double, Blocks[i].ele_num);
     }
+    printf("portion_num=%d  ele_num=%d\n", portion_num, Blocks[0].ele_num );
 
 }
 
@@ -352,16 +353,18 @@ void rdma_recvTd(int recv_thread_id)
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
         }
-        getchar();
+
 
 
         char* real_sta_buf = s_ctx[recv_thread_id].buffer;
         struct Block * pb = (struct Block*)(void*)(real_sta_buf);
         int block_idx = pb->block_id ;
+        printf("block_idx = %d\n", block_idx );
         Pblocks[block_idx].block_id = pb->block_id;
         Pblocks[block_idx].sta_idx = pb->sta_idx;
         Pblocks[block_idx].height = pb->height;
         Pblocks[block_idx].ele_num = pb->ele_num;
+        printf("p-ele_num=%d\n", pb->ele_num );
         //Pblocks[block_idx].eles = Malloc(double, pb->ele_num);
         Pblocks[block_idx].isP = pb->isP;
         double*data_eles = (double*)(void*) (real_sta_buf + struct_sz);
