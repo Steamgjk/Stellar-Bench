@@ -347,8 +347,10 @@ void rdma_recvTd(int recv_thread_id)
                     continue;
                 }
                 **/
-        printf("will recv [%d] [%d]\n", recv_thread_id, recved_iter[recv_thread_id]);
-        if (recved_iter[recv_thread_id] >= s_ctx[recv_thread_id].buf_recv_counter)
+
+        int to_recv_iter = recved_iter[recv_thread_id];
+        printf("will recv [%d] [%d]\n", recv_thread_id, to_recv_iter);
+        if (to_recv_iter > s_ctx[recv_thread_id].buf_recv_counter)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
