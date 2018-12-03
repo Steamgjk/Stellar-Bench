@@ -355,9 +355,11 @@ void rdma_recvTd(int recv_thread_id)
         }
 
 
-
+        printf("check 1\n");
         char* real_sta_buf = s_ctx[recv_thread_id].buffer;
+        printf("check 2\n");
         struct Block * pb = (struct Block*)(void*)(real_sta_buf);
+        printf("check 3\n");
         int block_idx = pb->block_id ;
         printf("block_idx = %d\n", block_idx );
         Pblocks[block_idx].block_id = pb->block_id;
