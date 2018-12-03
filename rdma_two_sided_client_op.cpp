@@ -193,9 +193,9 @@ void RdmaTwoSidedClientOp::rc_client_loop(const char *host, const char *port, vo
 
   conn->context = context;
 
-  printf("check1\n");
+  //printf("check1\n");
   client_build_params(&cm_params);
-  printf("check2\n");
+  //printf("check2\n");
 
   client_event_loop(ec, 1); // exit on disconnect
 
@@ -211,36 +211,36 @@ void RdmaTwoSidedClientOp::client_event_loop(struct rdma_event_channel *ec, int 
 
 //maybe should go to here
   client_build_params(&cm_params);
-  printf("check3\n");
+  //printf("check3\n");
   while (rdma_get_cm_event(ec, &event) == 0)
   {
     struct rdma_cm_event event_copy;
 //maybe should go to here
     memcpy(&event_copy, event, sizeof(*event));
     rdma_ack_cm_event(event);
-    printf("check4  EVENT=%d\n", event_copy.event);
+    //printf("check4  EVENT=%d\n", event_copy.event);
     if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
     {
-      printf("check5\n");
+      //printf("check5\n");
       client_build_connection(event_copy.id);
-      printf("check5.5\n");
+      //printf("check5.5\n");
       client_on_pre_conn(event_copy.id, s_ctx->pd);
-      printf("check6\n");
+      //printf("check6\n");
       TEST_NZ(rdma_resolve_route(event_copy.id, TIMEOUT_IN_MS));
     }
     else if (event_copy.event == RDMA_CM_EVENT_ROUTE_RESOLVED)
     {
-      printf("to rdma_connect...\n");
+      //printf("to rdma_connect...\n");
       TEST_NZ(rdma_connect(event_copy.id, &cm_params));
-      printf("rdma_connect  completed...\n");
+      //printf("rdma_connect  completed...\n");
     }
     else if (event_copy.event == RDMA_CM_EVENT_CONNECT_REQUEST)
     {
-      printf("check7\n");
+      //printf("check7\n");
       client_build_connection(event_copy.id);
-      printf("check9\n");
+      //printf("check9\n");
       client_on_pre_conn(event_copy.id, s_ctx->pd);
-      printf("check8\n");
+      //printf("check8\n");
       TEST_NZ(rdma_accept(event_copy.id, &cm_params));
 
     }
@@ -278,9 +278,9 @@ void RdmaTwoSidedClientOp::client_build_connection(struct rdma_cm_id *id)
   struct ibv_qp_init_attr qp_attr;
   client_build_context(id->verbs);
   client_build_qp_attr(&qp_attr);
-  printf("check 00\n");
+  //printf("check 00\n");
   TEST_NZ(rdma_create_qp(id, s_ctx->pd, &qp_attr));
-  printf("check 01\n");
+  //printf("check 01\n");
 }
 
 void RdmaTwoSidedClientOp::client_build_context(struct ibv_context *verbs)
