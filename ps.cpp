@@ -144,7 +144,7 @@ int main(int argc, const char * argv[])
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
         }
-        printf("iter_t = %d recv_iter =%d\n", iter_t, recved_iter[0]);
+        printf("Main::iter_t = %d recv_iter =%d\n", iter_t, recved_iter[0]);
         srand(time(0));
         random_shuffle(worker_qidx, worker_qidx + worker_num); //迭代器
         for (int i = 0; i < worker_num; i++)
@@ -332,8 +332,6 @@ void rdma_recvTd(int recv_thread_id)
     bool fal = true;
     while (1 == 1)
     {
-
-
         int to_recv_iter = recved_iter[recv_thread_id] + 1;
         if (fal)
         {
@@ -381,7 +379,7 @@ void rdma_recvTd(int recv_thread_id)
         //this buf I have read it, so please prepare new buf content
         s_ctx[recv_thread_id].buf_prepared = false;
         recved_iter[recv_thread_id]++;
-        printf("recved_iter[%d]=%d\n", recv_thread_id, recved_iter[recv_thread_id]  );
+        printf("Recved recved_iter[%d]=%d\n", recv_thread_id, recved_iter[recv_thread_id]  );
         /////////////////////////////
         s_ctx[recv_thread_id].can_recv = true;
         //getchar();
