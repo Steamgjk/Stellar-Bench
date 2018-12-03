@@ -311,8 +311,9 @@ void rdma_sendTd(int send_thread_id)
             c_ctx[send_thread_id].buf_len = total_len;
             c_ctx[send_thread_id].buf_prepared = true; //maybe deprecated
             c_ctx[send_thread_id].can_send = true;
+            printf("[%d]should have sent %d\n", send_thread_id, to_send_iter[send_thread_id] );
             to_send_iter[send_thread_id]++;
-            printf("should have sent... to_send_iter[%d]=%d\n", send_thread_id, to_send_iter[send_thread_id]);
+            printf("to_send_iter[%d]=%d\n", send_thread_id, to_send_iter[send_thread_id]);
             //getchar();
         }
 

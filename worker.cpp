@@ -174,10 +174,11 @@ int main(int argc, const char * argv[])
             //printf("after submf\n");
             completed_iter = iter_t;
             iter_t++;
+            printf("completed_iter=%d to_compute=%d\n", completed_iter, iter_t );
         }
         else
         {
-            printf("NO iter_t=%d  recved_age=%d\n", iter_t, recved_age);
+            //printf("NO iter_t=%d  recved_age=%d\n", iter_t, recved_age);
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
@@ -533,7 +534,7 @@ void rdma_sendTd(int send_thread_id)
         //printf("canSend=%d\n", canSend );
         if (true == CanSend(to_send_age, completed_iter))
         {
-            printf("Td:%d cansend\n", thread_id );
+            printf("Td:%d cansend  %d\n", thread_id, to_send_age );
             size_t p_data_sz = sizeof(double) * Pblock.ele_num;
             size_t q_data_sz = sizeof(double) * Qblock.ele_num;
             size_t p_total = struct_sz + p_data_sz;
@@ -570,7 +571,8 @@ void rdma_recvTd(int recv_thread_id)
     while (1 == 1)
     {
         //buf_recv_counter
-        if (recved_age >= s_ctx[recv_thread_id].buf_recv_counter)
+        int to_recv_age = recved_age + 1;
+        if (to_recv_age >= s_ctx[recv_thread_id].buf_recv_counter)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
@@ -584,7 +586,7 @@ void rdma_recvTd(int recv_thread_id)
             continue;
         }
         **/
-
+        printf("to_recv_age=%d\n", to_recv_age );
         char* real_sta_buf = s_ctx[recv_thread_id].buffer;
 
         struct Block* pb = (struct Block*)(void*)real_sta_buf;
@@ -617,6 +619,7 @@ void rdma_recvTd(int recv_thread_id)
         s_ctx[recv_thread_id].buf_prepared = false;
         recved_age++;
         s_ctx[recv_thread_id].can_recv = true;
+        printf("recved_age=%d\n", recved_age );
 
     }
 
