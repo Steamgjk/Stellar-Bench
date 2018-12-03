@@ -163,8 +163,7 @@ int main(int argc, const char * argv[])
         }
         completed_iter = iter_t;
         iter_t++;
-        printf("stop...\n");
-        getchar();
+
         if (iter_t == 1200)
         {
             exit(0);
@@ -398,6 +397,7 @@ void rdma_recvTd(int recv_thread_id)
         printf("recved_iter[%d]=%d\n", recv_thread_id, recved_iter[recv_thread_id]  );
         /////////////////////////////
         s_ctx[recv_thread_id].can_recv = true;
+        getchar();
     }
 }
 
@@ -418,6 +418,7 @@ void rdma_recvTd_loop(int recv_thread_id)
     int bind_port =  local_ports[recv_thread_id];
     char str_port[100];
     sprintf(str_port, "%d", bind_port);
+    printf("recv_thread_id=%d\n", recv_thread_id );
     RdmaTwoSidedServerOp rtos;
     rtos.rc_server_loop(str_port, &(s_ctx[recv_thread_id]));
 
