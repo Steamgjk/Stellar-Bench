@@ -547,6 +547,7 @@ void rdma_sendTd(int send_thread_id)
             memcpy(buf + p_total + struct_sz , (Qblock.eles), q_data_sz);
             c_ctx[send_thread_id].buf_len = total_len;
             c_ctx[send_thread_id].buf_prepared = true;
+            c_ctx[send_thread_id].can_send = true;
             printf("should have sent %d\n", to_send_age );
             to_send_age++;
         }
