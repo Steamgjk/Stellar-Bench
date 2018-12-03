@@ -531,7 +531,7 @@ void rdma_sendTd(int send_thread_id)
     while (1 == 1)
     {
         //printf("canSend=%d\n", canSend );
-        if (true == CanSend(to_send_iter, completed_iter))
+        if (true == CanSend(to_send_age, completed_iter))
         {
             printf("Td:%d cansend\n", thread_id );
             size_t p_data_sz = sizeof(double) * Pblock.ele_num;
@@ -546,11 +546,11 @@ void rdma_sendTd(int send_thread_id)
             memcpy(buf + p_total + struct_sz , (Qblock.eles), q_data_sz);
             c_ctx[send_thread_id].buf_len = total_len;
             c_ctx[send_thread_id].buf_prepared = true;
-            to_send_iter++;
+            to_send_age++;
         }
         else
         {
-            printf("completed_iter=%d to_send_iter=%d\n", completed_iter, to_send_iter );
+            printf("completed_iter=%d to_send_age=%d\n", completed_iter, to_send_age );
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
