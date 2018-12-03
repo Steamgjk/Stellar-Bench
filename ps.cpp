@@ -153,17 +153,20 @@ int main(int argc, const char * argv[])
         {
             printf("%d  [%d:%d]\n", i, worker_pidx[i], worker_qidx[i] );
         }
+        /*
+                if (iter_t % 10 == 0 )
+                {
+                    gettimeofday(&ed, 0);
+                    time_span[iter_t / 10] = (ed.tv_sec - beg.tv_sec) * 1000000 + ed.tv_usec - beg.tv_usec;
+                    printf("time= %d\t%lld\n", iter_t, time_span[iter_t / 10] );
 
-        if (iter_t % 10 == 0 )
-        {
-            gettimeofday(&ed, 0);
-            time_span[iter_t / 10] = (ed.tv_sec - beg.tv_sec) * 1000000 + ed.tv_usec - beg.tv_usec;
-            printf("time= %d\t%lld\n", iter_t, time_span[iter_t / 10] );
-
-        }
+                }
+                **/
         completed_iter = iter_t;
         iter_t++;
+        printf("completed_iter=%d to_start iter_t=%d\n", completed_iter, iter_t);
 
+        getchar();
         if (iter_t == 1200)
         {
             exit(0);
@@ -339,29 +342,18 @@ void rdma_recvTd(int recv_thread_id)
     while (1 == 1)
     {
 
-        /*
-                if (s_ctx[recv_thread_id].buf_prepared == false)
-                {
-                    //printf("[%d] recv buf_prepared = false\n", recv_thread_id );
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                    continue;
-                }
-                **/
 
         int to_recv_iter = recved_iter[recv_thread_id];
-        printf("will recv [%d] [%d]\n", recv_thread_id, to_recv_iter);
+
         if (to_recv_iter > s_ctx[recv_thread_id].buf_recv_counter)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
         }
+        printf("will recv [%d] [%d]\n", recv_thread_id, to_recv_iter);
 
-
-        printf("check 1\n");
         char* real_sta_buf = s_ctx[recv_thread_id].buffer;
-        printf("check 2\n");
         struct Block * pb = (struct Block*)(void*)(real_sta_buf);
-        printf("check 3\n");
         int block_idx = pb->block_id ;
         printf("block_idx = %d\n", block_idx );
         Pblocks[block_idx].block_id = pb->block_id;
@@ -375,12 +367,6 @@ void rdma_recvTd(int recv_thread_id)
         size_t data_sz = pb->ele_num * sizeof(double);
         memcpy(Pblocks[block_idx].eles, data_eles, data_sz);
 
-        /*
-                for (int i = 0; i < pb->ele_num; i++)
-                {
-                    Pblocks[block_idx].eles[i] = data_eles[i];
-                }
-        **/
 
         size_t p_total = struct_sz + data_sz;
         struct Block * qb = (struct Block*)(void*)(real_sta_buf + p_total);
@@ -394,12 +380,7 @@ void rdma_recvTd(int recv_thread_id)
         //Qblocks[block_idx].eles = Malloc(double, qb->ele_num);
         Qblocks[block_idx].isP = qb->isP;
         memcpy(Qblocks[block_idx].eles, data_eles, data_sz);
-        /*
-        for (int i = 0; i < qb->ele_num; i++)
-        {
-            Qblocks[block_idx].eles[i] = data_eles[i];
-        }
-        **/
+
         //this buf I have read it, so please prepare new buf content
         s_ctx[recv_thread_id].buf_prepared = false;
         recved_iter[recv_thread_id]++;
