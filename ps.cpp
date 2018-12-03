@@ -127,7 +127,7 @@ int main(int argc, const char * argv[])
     for (int i = 0; i < worker_num; i++)
     {
         recved_iter[i] = -1;
-        to_send_iter[i] = -1;
+        to_send_iter[i] = 0;
         worker_pidx[i] = worker_qidx[i] = i;
     }
 
@@ -145,23 +145,12 @@ int main(int argc, const char * argv[])
             continue;
         }
         printf("iter_t = %d recv_iter =%d\n", iter_t, recved_iter[0]);
-
-
         srand(time(0));
         random_shuffle(worker_qidx, worker_qidx + worker_num); //迭代器
         for (int i = 0; i < worker_num; i++)
         {
             printf("%d  [%d:%d]\n", i, worker_pidx[i], worker_qidx[i] );
         }
-        /*
-                if (iter_t % 10 == 0 )
-                {
-                    gettimeofday(&ed, 0);
-                    time_span[iter_t / 10] = (ed.tv_sec - beg.tv_sec) * 1000000 + ed.tv_usec - beg.tv_usec;
-                    printf("time= %d\t%lld\n", iter_t, time_span[iter_t / 10] );
-
-                }
-                **/
         completed_iter = iter_t;
         iter_t++;
         printf("completed_iter=%d to_start iter_t=%d\n", completed_iter, iter_t);
