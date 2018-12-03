@@ -85,10 +85,17 @@ int main(int argc, const char * argv[])
         worker_num = atoi(argv[1]) ;
     }
 
+    for (int i = 0; i < worker_num; i++)
+    {
+        recved_iter[i] = -1;
+        to_send_iter[i] = 0;
+        worker_pidx[i] = worker_qidx[i] = i;
+    }
+
     int thid = 0;
     for (thid = 0; thid < worker_num; thid++)
     {
-        printf("thid=%d\n", thid );
+        //printf("thid=%d\n", thid );
         std::thread recv_loop_thread(rdma_recvTd_loop, thid);
         recv_loop_thread.detach();
         std::thread recv_thread(rdma_recvTd, thid);
@@ -124,12 +131,7 @@ int main(int argc, const char * argv[])
         }
     }
 
-    for (int i = 0; i < worker_num; i++)
-    {
-        recved_iter[i] = -1;
-        to_send_iter[i] = 0;
-        worker_pidx[i] = worker_qidx[i] = i;
-    }
+
 
     struct timeval beg, ed;
     iter_t = 0;
