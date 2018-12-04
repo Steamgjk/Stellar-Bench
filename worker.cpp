@@ -352,24 +352,27 @@ void rdma_recvTd(int recv_thread_id)
 
         struct Block* pb = (struct Block*)(void*)real_sta_buf;
         Pblock.block_id = pb->block_id;
-        Pblock.data_age = pb->data_age;
+
         Pblock.sta_idx = pb->sta_idx;
         Pblock.height = pb->height;
         Pblock.ele_num = pb->ele_num;
         Pblock.eles = Malloc(double, pb->ele_num);
         double* data_eles = (double*)(void*) (real_sta_buf + struct_sz);
         memcpy(Pblock.eles, data_eles, sizeof(double)*Pblock.ele_num);
+        Pblock.data_age = pb->data_age;
 
         size_t p_total = struct_sz + sizeof(double) * (pb->ele_num);
         struct Block* qb = (struct Block*)(void*)(real_sta_buf + p_total);
         Qblock.block_id = qb->block_id;
-        Qblock.data_age = qb->data_age;
         Qblock.sta_idx = qb->sta_idx;
         Qblock.height = qb->height;
         Qblock.ele_num = qb-> ele_num;
         Qblock.eles = Malloc(double, qb->ele_num);
         data_eles = (double*)(void*)(real_sta_buf + p_total + struct_sz);
         memcpy(Qblock.eles, data_eles, sizeof(double)*Qblock.ele_num);
+        Qblock.data_age = qb->data_age;
+        printf("pid=%d page=%d\n", Pblock.block_id, Pblock.data_age );
+        printf("qid=%d qage=%d\n", Qblock.block_id, Qblock.data_age );
         /*
                 for (int i = 0; i < Pblock.height; i++)
                 {

@@ -150,7 +150,7 @@ int main(int argc, const char * argv[])
         }
         printf("Main::iter_t = %d recv_iter =%d\n", iter_t, recved_iter[0]);
         srand(time(0));
-        random_shuffle(worker_qidx, worker_qidx + worker_num); //迭代器
+        //random_shuffle(worker_qidx, worker_qidx + worker_num); //迭代器
         for (int i = 0; i < worker_num; i++)
         {
             printf("%d  [%d:%d]\n", i, worker_pidx[i], worker_qidx[i] );
@@ -307,6 +307,8 @@ void rdma_sendTd(int send_thread_id)
             size_t q_total = struct_sz + q_data_sz;
             size_t total_len = p_total + q_total;
             char* real_sta_buf = c_ctx[send_thread_id].buffer;
+            Pblocks[pbid].data_age = to_send_iter[send_thread_id];
+            Qblocks[qbid].data_age = to_send_iter[send_thread_id];
 
             memcpy(real_sta_buf, &(Pblocks[pbid]), struct_sz);
             memcpy(real_sta_buf + struct_sz, (char*) & (Pblocks[pbid].eles[0]), p_data_sz );
