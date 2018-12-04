@@ -292,7 +292,8 @@ void rdma_sendTd(int send_thread_id)
     printf("[%d] has registered send buffer\n", send_thread_id);
     while (1 == 1)
     {
-        if (false == CanSend(to_send_iter[send_thread_id], completed_iter) )
+        //if (false == CanSend(to_send_iter[send_thread_id], completed_iter) )
+        if (false == CanSend(to_send_iter[send_thread_id], recved_iter[send_thread_id] ) )
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
@@ -367,7 +368,7 @@ void rdma_recvTd(int recv_thread_id)
         double*data_eles = (double*)(void*) (real_sta_buf + struct_sz);
         size_t data_sz = pb->ele_num * sizeof(double);
         memcpy(Pblocks[block_idx].eles, data_eles, data_sz);
-
+        Pblocks[block_idx].data_age = pb->data_age;
 
         size_t p_total = struct_sz + data_sz;
         struct Block * qb = (struct Block*)(void*)(real_sta_buf + p_total);
@@ -381,7 +382,7 @@ void rdma_recvTd(int recv_thread_id)
         //Qblocks[block_idx].eles = Malloc(double, qb->ele_num);
         Qblocks[block_idx].isP = qb->isP;
         memcpy(Qblocks[block_idx].eles, data_eles, data_sz);
-
+        Qblocks[block_idx].data_age = qb->data_age;
         //this buf I have read it, so please prepare new buf content
         s_ctx[recv_thread_id].buf_prepared = false;
         recved_iter[recv_thread_id]++;
