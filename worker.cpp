@@ -373,7 +373,7 @@ void rdma_recvTd(int recv_thread_id)
 
         for (int i = 0; i < Pblock.height; i++)
         {
-            if (Pblock.eles[i * K] != 0.1 && Pblock.eles[i * K] != 0.2 && Pblock.eles[i * K] != 0.3 && Pblock.eles[i * K] != 0.4)
+            if (Pblock.eles[i * K] != 0.1 && Pblock.eles[i * K] != 0.2 && Pblock.eles[i * K] != 0.3 && Pblock.eles[i * K] != 0.0)
             {
                 printf("[%d]%f\t", i, Pblock.eles[i * K] );
             }
