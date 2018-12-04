@@ -159,7 +159,7 @@ int main(int argc, const char * argv[])
         iter_t++;
         printf("completed_iter=%d to_start iter_t=%d\n", completed_iter, iter_t);
 
-        getchar();
+        //getchar();
         if (iter_t == 1200)
         {
             exit(0);
