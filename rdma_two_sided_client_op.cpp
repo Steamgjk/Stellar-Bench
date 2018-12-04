@@ -81,7 +81,7 @@ void RdmaTwoSidedClientOp::client_send_next_chunk(struct rdma_cm_id *id)
   //printf("buf= %s  len=%ld\n", ctx->buffer, ctx->buf_len );
 
   client_write_remote(id, ctx->buf_len);
-  printf("send chunk success\n");
+  //printf("send chunk success\n");
   ctx->buf_prepared = false;
 }
 
@@ -116,14 +116,14 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
       ctx->peer_addr = ctx->msg->data.mr.addr;
       ctx->peer_rkey = ctx->msg->data.mr.rkey;
 
-      printf("received MR,send chunk\n");
+      //printf("received MR,send chunk\n");
       //send_file_name(id);
 
       while (ctx->can_send == false)
       {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
-      printf("Before send chunk  %ld\n", ctx->buf_len);
+      //printf("Before send chunk  %ld\n", ctx->buf_len);
       /*
       for (int ii = 0; ii < ctx->buf_len; ii++)
       {
@@ -169,7 +169,7 @@ void RdmaTwoSidedClientOp::client_on_completion(struct ibv_wc *wc)
   }
   else
   {
-    printf("wc-opcode=%d  IBV_WC_RDMA_WRITE=%d\n", wc->opcode, IBV_WC_RDMA_WRITE  );
+    //printf("wc-opcode=%d  IBV_WC_RDMA_WRITE=%d\n", wc->opcode, IBV_WC_RDMA_WRITE  );
   }
 }
 
