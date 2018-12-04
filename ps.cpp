@@ -189,7 +189,8 @@ bool CanMerge(int coming_iter, int r_iter[], int len)
 bool CanSend(int to_send_iter, int completed_age)
 {
     //printf("to_send_iter=%d  completed_age=%d\n", to_send_iter, completed_age );
-    if (to_send_iter <= completed_age)
+    //if (to_send_iter <= completed_age)
+    if (to_send_iter <= completed_age + 1)
     {
         return true;
     }
@@ -394,6 +395,7 @@ void rdma_recvTd(int recv_thread_id)
         fal = true;
     }
 }
+
 
 void rdma_sendTd_loop(int send_thread_id)
 {
