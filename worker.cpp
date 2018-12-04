@@ -370,15 +370,16 @@ void rdma_recvTd(int recv_thread_id)
         Qblock.eles = Malloc(double, qb->ele_num);
         data_eles = (double*)(void*)(real_sta_buf + p_total + struct_sz);
         memcpy(Qblock.eles, data_eles, sizeof(double)*Qblock.ele_num);
-
-        for (int i = 0; i < Pblock.height; i++)
-        {
-            if (Pblock.eles[i * K] != 0.1 && Pblock.eles[i * K] != 0.2 && Pblock.eles[i * K] != 0.3 && Pblock.eles[i * K] != 0.0)
-            {
-                printf("[%d]%f\t", i, Pblock.eles[i * K] );
-            }
-        }
-        printf("\n");
+        /*
+                for (int i = 0; i < Pblock.height; i++)
+                {
+                    if (Pblock.eles[i * K] != 0.1 && Pblock.eles[i * K] != 0.2 && Pblock.eles[i * K] != 0.3 && Pblock.eles[i * K] != 0.0)
+                    {
+                        printf("[%d]%f\t", i, Pblock.eles[i * K] );
+                    }
+                }
+                printf("\n");
+        **/
         //this buf I have read it, so please prepare new buf content
         recved_age++;
         s_ctx[recv_thread_id].can_recv = true;
