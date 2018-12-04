@@ -241,7 +241,7 @@ void FakeSubMF()
         }
         for (int k = 0; k < K; k++)
         {
-            predict_r += Pblock.eles[pr * K + k] * Qblock[qc * K + k];
+            predict_r += Pblock.eles[pr * K + k] * Qblock.eles[qc * K + k];
         }
         error = r - predict_r;
         for (int k = 0; k < K; ++k)
