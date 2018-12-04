@@ -57,7 +57,7 @@ int local_ports[CAP] = {5511, 5512, 5513, 5514};
 
 #define ThreshIter 1000
 #define SEQ_LEN 5000
-#define WORKER_THREAD_NUM 1
+#define WORKER_THREAD_NUM 4
 
 struct Block Pblock;
 struct Block Qblock;
@@ -77,23 +77,17 @@ void rdma_sendTd_loop(int send_thread_id);
 void rdma_recvTd_loop(int recv_thread_id);
 void InitContext();
 void submf();
+void FakeSubMF();
 void WriteLog(Block&Pb, Block&Qb, int iter_cnt);
 void LoadRmatrix(int file_no, map<long, double>& myMap);
 void CalcUpdt(int thread_id);
 void LoadData();
 bool CanCompute(int coming_iter, int recved_age);
-bool CanPush(int completed_iter, int sended_age);
 bool CanSend(int to_send_iter, int completed_age);
 
 int thread_id = -1;
 struct timeval start, stop, diff;
-vector<bool> StartCalcUpdt;
-map<long, double> RMap;
-map<long, double> RMaps[8][8];
-std::vector<long> hash_for_row_threads[10][10][WORKER_THREAD_NUM];
-std::vector<double> rates_for_row_threads[10][10][WORKER_THREAD_NUM];
-std::vector<long> hash_for_col_threads[10][10][WORKER_THREAD_NUM];
-std::vector<double> rates_for_col_threads[10][10][WORKER_THREAD_NUM];
+
 int iter_t = 0;
 int recved_age = -1;
 int to_send_age = 0;
@@ -131,11 +125,7 @@ int main(int argc, const char * argv[])
     std::thread send_thread(rdma_sendTd, th_id);
     send_thread.detach();
 
-    StartCalcUpdt.resize(WORKER_THREAD_NUM);
-    for (int i = 0; i < WORKER_THREAD_NUM; i++)
-    {
-        StartCalcUpdt[i] = false;
-    }
+
     memset(&start, 0, sizeof(struct timeval));
     memset(&stop, 0, sizeof(struct timeval));
     memset(&diff, 0, sizeof(struct timeval));
@@ -169,9 +159,10 @@ int main(int argc, const char * argv[])
             int col_sta_idx = Qblock.sta_idx;
             int col_len = Qblock.height;
             int ele_num = row_len * col_len;
-            printf("before submf\n");
+            //printf("before submf\n");
             //submf();
-            printf("after submf\n");
+            //printf("after submf\n");
+            FakeSubMF();
             completed_iter = iter_t;
             iter_t++;
             printf("completed_iter=%d to_compute=%d\n", completed_iter, iter_t );
@@ -207,17 +198,6 @@ bool CanSend(int to_send_iter, int completed_age)
         return false;
     }
 }
-bool CanPush(int completed_iter, int sended_age)
-{
-    if (completed_iter > sended_age)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
 void InitContext()
 {
     for (int i = 0; i < CAP; i++)
@@ -233,230 +213,49 @@ void InitContext()
 
 void LoadData()
 {
-    char fn[100];
-    long hash_id;
-    double rate;
-    long cnt = 0;
-    for (int row = 0; row < WORKER_NUM; row++)
-    {
-        for (int col = 0; col < WORKER_NUM; col++)
-        {
-            for (int td = 0; td < WORKER_THREAD_NUM; td++)
-            {
-                hash_for_row_threads[row][col][td].clear();
-                rates_for_row_threads[row][col][td].clear();
-                hash_for_col_threads[row][col][td].clear();
-                rates_for_col_threads[row][col][td].clear();
-            }
 
-        }
-    }
-    for (int data_idx = 0; data_idx < 64; data_idx++)
-    {
-        int row = data_idx / DIM_NUM;
-        int col = data_idx % DIM_NUM;
-        row /= 2;
-        col /= 2;
-        sprintf(fn, "%s%d", FILE_NAME, data_idx);
-        //printf("fn=%s  :[%d][%d]\n", fn, row, col );
-        ifstream ifs(fn);
-        if (!ifs.is_open())
-        {
-            printf("fail-LoadD to open %s\n", fn );
-            exit(-1);
-        }
-        cnt = 0;
-        long ridx, cidx;
-
-        while (!ifs.eof())
-        {
-            hash_id = -1;
-            ifs >> hash_id >> rate;
-            if (hash_id >= 0)
-            {
-                ridx = ((hash_id) / M) % WORKER_THREAD_NUM;
-                cidx = ((hash_id) % M) % WORKER_THREAD_NUM;
-
-                hash_for_row_threads[row][col][ridx].push_back(hash_id);
-                rates_for_row_threads[row][col][ridx].push_back(rate);
-                hash_for_col_threads[row][col][cidx].push_back(hash_id);
-                rates_for_col_threads[row][col][cidx].push_back(rate);
-            }
-        }
-    }
 }
 
-
-void CalcUpdt(int td_id)
+void FakeSubMF()
 {
-
-    while (1 == 1)
-    {
-
-        int p_block_idx = Pblock.block_id;
-        int q_block_idx = Qblock.block_id;
-        if (StartCalcUpdt[td_id] == true)
+    /*
+        for (int k = 0; k < K; ++k)
         {
-            //printf("enter CalcUpdt\n");
-            int times_thresh = 5000;
-            int row_sta_idx = Pblock.sta_idx;
-            int col_sta_idx = Qblock.sta_idx;
-            size_t rtsz;
-            size_t ctsz;
-            rtsz = hash_for_row_threads[p_block_idx][q_block_idx][td_id].size();
-            ctsz = hash_for_col_threads[p_block_idx][q_block_idx][td_id].size();
-            if (rtsz == 0 || ctsz == 0)
-            {
-                StartCalcUpdt[td_id] = false;
-                continue;
-            }
-            int rand_idx = -1;
-            for (times_thresh; times_thresh > 0; times_thresh--)
-            {
-                //printf("times_thresh=%d\n", times_thresh );
-                rand_idx = random() % rtsz;
-                long real_hash_idx = hash_for_row_threads[p_block_idx][q_block_idx][td_id][rand_idx];
-                long i = real_hash_idx / M - row_sta_idx;
-                long j = real_hash_idx % M - col_sta_idx;
-                double error = rates_for_row_threads[p_block_idx][q_block_idx][td_id][rand_idx];
-                if (i < 0 || j < 0 || i >= Pblock.height || j >= Qblock.height)
-                {
-                    //printf("[%d] continue i=%ld j=%ld  ph=%d  qh=%d \n", td_id, i, j , Pblock.height, Qblock.height);
-                    //getchar();
-                    continue;
-                }
-                for (int k = 0; k < K; ++k)
-                {
-                    error -= oldP[i * K + k] * oldQ[j * K + k];
-                }
-                /*
-                if (error >= 300 )
-                {
-                    error = 300;
-                }
-                if (error <= -300)
-                {
-                    error = -300;
-                }
-                **/
-                for (int k = 0; k < K; ++k)
-                {
-                    Pblock.eles[i * K + k] += yita * (error * oldQ[j * K + k] - theta * oldP[i * K + k]);
-
-
-
-                    if (Pblock.eles[i * K + k] + 1 == Pblock.eles[i * K + k] - 1)
-                    {
-                        printf("p %d q %d  error =%lf i=%d j=%d k=%d rand_idx=%d vale=%lf pvale=%lf  qvalue=%lf\n", p_block_idx, q_block_idx, error, i, j, k, rand_idx,  rates_for_col_threads[p_block_idx][q_block_idx][td_id][rand_idx], oldP[i * K + k], oldQ[j * K + k] );
-                        getchar();
-                    }
-                }
-
-                rand_idx = random() % ctsz;
-                real_hash_idx = hash_for_col_threads[p_block_idx][q_block_idx][td_id][rand_idx];
-                i = real_hash_idx / M - row_sta_idx;
-                j = real_hash_idx % M - col_sta_idx;
-                if (i < 0 || j < 0 || i >= Pblock.height || j >= Qblock.height)
-                {
-                    //printf("[%d] continue l11 \n", td_id);
-                    continue;
-                }
-                error = rates_for_col_threads[p_block_idx][q_block_idx][td_id][rand_idx];
-
-                for (int k = 0; k < K; ++k)
-                {
-                    error -= oldP[i * K + k] * oldQ[j * K + k];
-                }
-                /*
-                if (error >= 300 )
-                {
-                    error = 300;
-                }
-                if (error <= -300)
-                {
-                    error = -300;
-                }
-                **/
-                for (int k = 0; k < K; ++k)
-                {
-
-                    Qblock.eles[j * K + k] += yita * (error * oldP[i * K + k] - theta * oldQ[j * K + k]);
-                    if (Qblock.eles[j * K + k] + 1 == Qblock.eles[j * K + k] - 1)
-                    {
-                        printf("p %d q %d  error =%lf i=%d j=%d k=%d rand_idx=%d vale=%lf pvale=%lf  qvalue=%lf\n", p_block_idx, q_block_idx, error, i, j, k, rand_idx,  rates_for_col_threads[p_block_idx][q_block_idx][td_id][rand_idx], oldP[i * K + k], oldQ[j * K + k] );
-                        getchar();
-
-                    }
-                }
-            }
-            //printf("Fini %d\n", td_id);
-            StartCalcUpdt[td_id] = false;
-
-
+            Pblock.eles[i * K + k] += yita * (error * oldQ[j * K + k] - theta * oldP[i * K + k]);
         }
+    **/
+    int sample_num = 90000;
 
+    double error = 0.0;
+    printf("p-height=%d q-height=%d\n", Pblock.height, Qblock.height );
+    for (int sn = 0; sn < sample_num; sn++)
+    {
+        //read a rating entry
+        double r = 0.0;
+        double predict_r = 0.0;
+        int pr = random() % Pblock.height;
+        int qc = random() % Qblock.height;
+        if (sn <= 5)
+        {
+            printf("sn=%d pr=%d qc=%d\n", sn, pr, qc);
+        }
+        for (int k = 0; k < K; k++)
+        {
+            predict_r += Pblock.eles[pr * K + k] * Qblock[qc * K + k];
+        }
+        error = r - predict_r;
+        for (int k = 0; k < K; ++k)
+        {
+            Pblock.eles[pr * K + k] += yita * (error * Qblock.eles[qc * K + k] - theta * Pblock.eles[pr * K + k]);
+            Qblock.eles[qc * K + k] += yita * (error * Pblock.eles[pr * K + k] - theta * Qblock.eles[qc * K + k]);
+        }
+        if (sn % 5000 == 0)
+        {
+            printf("sn == %d\n", sn );
+        }
     }
-
-
 }
-void submf()
-{
-    int minN = Pblock.height;
-    int minM = Qblock.height;
-    int row_sta_idx = Pblock.sta_idx;
-    int col_sta_idx = Qblock.sta_idx;
-    int row_len = Pblock.height;
-    int col_len = Qblock.height;
-    int Psz = Pblock.height * K;
-    int Qsz = Qblock.height * K;
-    memcpy(oldP, Pblock.eles, Psz);
-    memcpy(oldQ, Qblock.eles, Qsz);
-    struct timeval beg, ed;
-    long long mksp;
-    gettimeofday(&beg, 0);
-    int row = Pblock.block_id;
-    int col = Qblock.block_id;
-    //printf("row=%d col=%d\n", row, col );
-    for (int td = 0; td < WORKER_THREAD_NUM; td++)
-    {
-        hash_for_row_threads[row][col][td].clear();
-        rates_for_row_threads[row][col][td].clear();
-        hash_for_col_threads[row][col][td].clear();
-        rates_for_col_threads[row][col][td].clear();
-    }
 
-    gettimeofday(&ed, 0);
-    mksp = (ed.tv_sec - beg.tv_sec) * 1000000 + ed.tv_usec - beg.tv_usec;
-    load_time += mksp;
-    printf("Load time = %lld\n", mksp);
-    bool canbreak = true;
-    for (int ii = 0; ii < WORKER_THREAD_NUM; ii++)
-    {
-        StartCalcUpdt[ii] = 1;
-    }
-    while (1 == 1)
-    {
-        canbreak = true;
-        for (int ii = 0; ii < WORKER_THREAD_NUM; ii++)
-        {
-
-            if (StartCalcUpdt[ii] == true)
-            {
-                canbreak = false;
-            }
-
-        }
-        if (canbreak)
-        {
-            break;
-        }
-    }
-    gettimeofday(&ed, 0);
-    mksp = (ed.tv_sec - beg.tv_sec) * 1000000 + ed.tv_usec - beg.tv_usec;
-
-    calc_time += mksp;
-    printf("Calc  time = %lld\n", mksp);
-}
 
 
 int wait4connection(char*local_ip, int local_port)
@@ -518,13 +317,7 @@ void rdma_sendTd(int send_thread_id)
 {
 
     size_t struct_sz = sizeof(Block);
-    /*
-    while (c_ctx[send_thread_id].buf_registered == false)
-    {
-        //printf("[%d] has not registered buffer\n", send_thread_id);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-    **/
+
     printf("[%d] has registered send buffer\n", send_thread_id);
     while (1 == 1)
     {
