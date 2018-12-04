@@ -131,6 +131,10 @@ int main(int argc, const char * argv[])
 
         if (true == CanCompute(iter_t, recved_age))
         {
+            if (thread_id == 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+            }
             //SGD
             int row_sta_idx = Pblock.sta_idx;
             int row_len = Pblock.height;
@@ -156,7 +160,7 @@ int main(int argc, const char * argv[])
 }
 bool CanCompute(int coming_iter, int recved_age)
 {
-    if (coming_iter <= recved_age)
+    if (coming_iter <= recved_age + 2)
     {
         return true;
     }
@@ -213,14 +217,17 @@ void FakeSubMF()
         double predict_r = 0.0;
         int pr = random() % Pblock.height;
         int qc = random() % Qblock.height;
+        /*
         if (sn <= 5)
         {
             printf("sn=%d pr=%d qc=%d\n", sn, pr, qc);
         }
+        **/
         for (int k = 0; k < K; k++)
         {
             predict_r += Pblock.eles[pr * K + k] * Qblock.eles[qc * K + k];
         }
+
         error = r - predict_r;
         for (int k = 0; k < K; ++k)
         {
