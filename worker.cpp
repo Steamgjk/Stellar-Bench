@@ -580,14 +580,6 @@ void rdma_recvTd(int recv_thread_id)
             continue;
 
         }
-        /*
-        if (s_ctx[recv_thread_id].buf_prepared == false)
-        {
-            //printf("[%d] recv buf prepared = false\n", recv_thread_id );
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            continue;
-        }
-        **/
         printf("to_recv_age=%d\n", to_recv_age );
         char* real_sta_buf = s_ctx[recv_thread_id].buffer;
 
@@ -603,6 +595,13 @@ void rdma_recvTd(int recv_thread_id)
         {
             Pblock.eles[i] = data_eles[i];
         }
+        printf("Sample P \n");
+        for (int i = 0; i < 10; i++)
+        {
+            printf("%lf\t", Pblock.eles[i]);
+        }
+        printf("\n");
+
         size_t p_total = struct_sz + sizeof(double) * (pb->ele_num);
         struct Block* qb = (struct Block*)(void*)(real_sta_buf + p_total);
         Qblock.block_id = qb->block_id;
@@ -616,6 +615,13 @@ void rdma_recvTd(int recv_thread_id)
         {
             Qblock.eles[i] = data_eles[i];
         }
+
+        printf("Sample Q \n");
+        for (int i = 0; i < 10; i++)
+        {
+            printf("%lf\t", Qblock.eles[i]);
+        }
+        printf("\n");
 
         //this buf I have read it, so please prepare new buf content
         s_ctx[recv_thread_id].buf_prepared = false;

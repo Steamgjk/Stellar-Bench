@@ -123,11 +123,13 @@ int main(int argc, const char * argv[])
     {
         for (int j = 0; j < Pblocks[i].ele_num; j++)
         {
-            Pblocks[i].eles[j] = drand48() * 0.2;
+            //Pblocks[i].eles[j] = drand48() * 0.2;
+            Pblocks[i].eles[j] = i * 0.1;
         }
         for (int j = 0; j < Qblocks[i].ele_num; j++)
         {
-            Qblocks[i].eles[j] = drand48() * 0.2;
+            //Qblocks[i].eles[j] = drand48() * 0.2;
+            Qblocks[i].eles[j] = i * 0.1 + 1;
         }
     }
 
