@@ -189,8 +189,7 @@ bool CanMerge(int coming_iter, int r_iter[], int len)
 bool CanSend(int to_send_iter, int completed_age)
 {
     //printf("to_send_iter=%d  completed_age=%d\n", to_send_iter, completed_age );
-    //if (to_send_iter <= completed_age)
-    if (to_send_iter <= completed_age + 1)
+    if (to_send_iter <= completed_age)
     {
         return true;
     }
@@ -293,8 +292,7 @@ void rdma_sendTd(int send_thread_id)
     printf("[%d] has registered send buffer\n", send_thread_id);
     while (1 == 1)
     {
-        //if (false == CanSend(to_send_iter[send_thread_id], completed_iter) )
-        if (false == CanSend(to_send_iter[send_thread_id], recved_iter[send_thread_id] ) )
+        if (false == CanSend(to_send_iter[send_thread_id], completed_iter) )
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             continue;
@@ -395,7 +393,6 @@ void rdma_recvTd(int recv_thread_id)
         fal = true;
     }
 }
-
 
 void rdma_sendTd_loop(int send_thread_id)
 {

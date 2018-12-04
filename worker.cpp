@@ -234,10 +234,12 @@ void FakeSubMF()
             Pblock.eles[pr * K + k] += yita * (error * Qblock.eles[qc * K + k] - theta * Pblock.eles[pr * K + k]);
             Qblock.eles[qc * K + k] += yita * (error * Pblock.eles[pr * K + k] - theta * Qblock.eles[qc * K + k]);
         }
+        /*
         if (sn % 5000 == 0)
         {
             printf("sn == %d\n", sn );
         }
+        **/
     }
 }
 
