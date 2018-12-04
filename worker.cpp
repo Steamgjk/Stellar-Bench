@@ -169,9 +169,9 @@ int main(int argc, const char * argv[])
             int col_sta_idx = Qblock.sta_idx;
             int col_len = Qblock.height;
             int ele_num = row_len * col_len;
-            //printf("before submf\n");
+            printf("before submf\n");
             //submf();
-            //printf("after submf\n");
+            printf("after submf\n");
             completed_iter = iter_t;
             iter_t++;
             printf("completed_iter=%d to_compute=%d\n", completed_iter, iter_t );
@@ -222,11 +222,9 @@ void InitContext()
 {
     for (int i = 0; i < CAP; i++)
     {
-        c_ctx[i].buf_prepared = false;
         c_ctx[i].buf_registered = false;
         c_ctx[i].buf_write_counter = 0;
 
-        s_ctx[i].buf_prepared = false;
         s_ctx[i].buf_registered = false;
         s_ctx[i].buf_recv_counter = 0;
     }
@@ -444,7 +442,6 @@ void submf()
 
             if (StartCalcUpdt[ii] == true)
             {
-                //printf("ii=%d, %d \n", ii, StartCalcUpdt[ii] );
                 canbreak = false;
             }
 
@@ -546,7 +543,6 @@ void rdma_sendTd(int send_thread_id)
             memcpy(buf + p_total, &(Qblock), struct_sz);
             memcpy(buf + p_total + struct_sz , (Qblock.eles), q_data_sz);
             c_ctx[send_thread_id].buf_len = total_len;
-            c_ctx[send_thread_id].buf_prepared = true;
             c_ctx[send_thread_id].can_send = true;
             printf("should have sent %d\n", to_send_age );
             to_send_age++;
@@ -592,18 +588,6 @@ void rdma_recvTd(int recv_thread_id)
         Pblock.eles = Malloc(double, pb->ele_num);
         double* data_eles = (double*)(void*) (real_sta_buf + struct_sz);
         memcpy(Pblock.eles, data_eles, sizeof(double)*Pblock.ele_num);
-        /*
-        for (int i = 0; i < Pblock.ele_num; i++)
-        {
-            Pblock.eles[i] = data_eles[i];
-        }
-        **/
-        printf("Sample P \n");
-        for (int i = 0; i < 10; i++)
-        {
-            printf("%lf\t", Pblock.eles[i]);
-        }
-        printf("\n");
 
         size_t p_total = struct_sz + sizeof(double) * (pb->ele_num);
         struct Block* qb = (struct Block*)(void*)(real_sta_buf + p_total);
@@ -615,15 +599,8 @@ void rdma_recvTd(int recv_thread_id)
         Qblock.eles = Malloc(double, qb->ele_num);
         data_eles = (double*)(void*)(real_sta_buf + p_total + struct_sz);
         memcpy(Qblock.eles, data_eles, sizeof(double)*Qblock.ele_num);
-        /*
-        for (int i = 0; i < Qblock.ele_num; i++)
-        {
-            Qblock.eles[i] = data_eles[i];
-        }
-        **/
 
         //this buf I have read it, so please prepare new buf content
-        s_ctx[recv_thread_id].buf_prepared = false;
         recved_age++;
         s_ctx[recv_thread_id].can_recv = true;
         printf("recved_age=%d\n", recved_age );
