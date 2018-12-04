@@ -160,7 +160,7 @@ int main(int argc, const char * argv[])
 }
 bool CanCompute(int coming_iter, int recved_age)
 {
-    if (coming_iter >= 0 && coming_iter <= recved_age + 2)
+    if (recved_age >= 0 && coming_iter <= recved_age + 2)
     {
         return true;
     }
