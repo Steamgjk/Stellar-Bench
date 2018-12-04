@@ -591,10 +591,13 @@ void rdma_recvTd(int recv_thread_id)
         Pblock.ele_num = pb->ele_num;
         Pblock.eles = Malloc(double, pb->ele_num);
         double* data_eles = (double*)(void*) (real_sta_buf + struct_sz);
+        memcpy(Pblock.eles, data_eles, sizeof(double)*Pblock.ele_num);
+        /*
         for (int i = 0; i < Pblock.ele_num; i++)
         {
             Pblock.eles[i] = data_eles[i];
         }
+        **/
         printf("Sample P \n");
         for (int i = 0; i < 10; i++)
         {
@@ -611,17 +614,13 @@ void rdma_recvTd(int recv_thread_id)
         Qblock.ele_num = qb-> ele_num;
         Qblock.eles = Malloc(double, qb->ele_num);
         data_eles = (double*)(void*)(real_sta_buf + p_total + struct_sz);
+        memcpy(Qblock.eles, data_eles, sizeof(double)*Qblock.ele_num);
+        /*
         for (int i = 0; i < Qblock.ele_num; i++)
         {
             Qblock.eles[i] = data_eles[i];
         }
-
-        printf("Sample Q \n");
-        for (int i = 0; i < 10; i++)
-        {
-            printf("%lf\t", Qblock.eles[i]);
-        }
-        printf("\n");
+        **/
 
         //this buf I have read it, so please prepare new buf content
         s_ctx[recv_thread_id].buf_prepared = false;
