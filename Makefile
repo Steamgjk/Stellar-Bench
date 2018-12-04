@@ -15,7 +15,7 @@ OBJS3=test_recv.o server_rdma_op.o client_rdma_op.o rdma_common.o rdma_two_sided
 GPUOBJS=worker.o server_rdma_op.o client_rdma_op.o rdma_common.o rdma_two_sided_client_op.o rdma_two_sided_server_op.o common.o
 
 $(GPUTARGET): $(GPUOBJS)
-	$(NVCC) -o $(GPUTARGET) $(GPUOBJS) $(LIBS)
+	$(NVCC) -Xcompiler -pthread -o $(GPUTARGET) $(GPUOBJS) $(LIBS)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
 $(TARGET1): $(OBJS1)
