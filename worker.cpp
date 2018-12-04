@@ -93,10 +93,6 @@ int recved_age = -1;
 int to_send_age = 0;
 int completed_iter = -1;
 
-long long calcTimes[2000];
-long long calc_time;
-long long load_time;
-long long loadTimes[2000];
 int main(int argc, const char * argv[])
 {
     for (int i = 0; i < CAP; i++)
@@ -124,29 +120,11 @@ int main(int argc, const char * argv[])
     send_loop_thread.detach();
     std::thread send_thread(rdma_sendTd, th_id);
     send_thread.detach();
-
-
     memset(&start, 0, sizeof(struct timeval));
     memset(&stop, 0, sizeof(struct timeval));
     memset(&diff, 0, sizeof(struct timeval));
 
     iter_t = 0;
-    calc_time = 0;
-    bool isstart = false;
-    std::vector<thread> td_vec;
-
-    for (int i = 0; i < WORKER_THREAD_NUM; i++)
-    {
-        //std::thread td(CalcUpdt, i);
-        td_vec.push_back(std::thread(CalcUpdt, i));
-    }
-    //printf("come here\n");
-    for (int i = 0; i < WORKER_THREAD_NUM; i++)
-    {
-        td_vec[i].detach();
-        //printf("%d  has detached\n", i );
-    }
-    printf("detached well\n");
 
     while (1 == 1)
     {
