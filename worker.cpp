@@ -131,10 +131,12 @@ int main(int argc, const char * argv[])
 
         if (true == CanCompute(iter_t, recved_age))
         {
+            /*
             if (thread_id == 0)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             }
+            **/
             //SGD
             int row_sta_idx = Pblock.sta_idx;
             int row_len = Pblock.height;
@@ -160,7 +162,8 @@ int main(int argc, const char * argv[])
 }
 bool CanCompute(int coming_iter, int recved_age)
 {
-    if (recved_age >= 0 && coming_iter <= recved_age + 2)
+    //if (recved_age >= 0 && coming_iter <= recved_age + 2)
+    if ( coming_iter <= recved_age)
     {
         return true;
     }
@@ -234,12 +237,10 @@ void FakeSubMF()
             Pblock.eles[pr * K + k] += yita * (error * Qblock.eles[qc * K + k] - theta * Pblock.eles[pr * K + k]);
             Qblock.eles[qc * K + k] += yita * (error * Pblock.eles[pr * K + k] - theta * Qblock.eles[qc * K + k]);
         }
-        /*
         if (sn % 5000 == 0)
         {
             printf("sn == %d\n", sn );
         }
-        **/
     }
 }
 
