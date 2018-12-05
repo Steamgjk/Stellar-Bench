@@ -30,7 +30,7 @@ test_send.o: test_send.cpp
 test_recv.o: test_recv.cpp
 	$(CC) $(CFLAGS) -c test_recv.cpp
 worker.o: worker.cpp gpu_mf.h
-	$(CC) $(CFLAGS) -c worker.cpp
+	nvcc -c worker.cpp
 ps.o: ps.cpp
 	$(CC) $(CFLAGS) -c ps.cpp
 server_rdma_op.o: server_rdma_op.cpp
