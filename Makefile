@@ -12,9 +12,11 @@ OBJS=ps.o server_rdma_op.o client_rdma_op.o rdma_common.o rdma_two_sided_client_
 OBJS1=worker.o server_rdma_op.o client_rdma_op.o rdma_common.o rdma_two_sided_client_op.o rdma_two_sided_server_op.o common.o
 OBJS2=test_send.o server_rdma_op.o client_rdma_op.o rdma_common.o rdma_two_sided_client_op.o rdma_two_sided_server_op.o common.o
 OBJS3=test_recv.o server_rdma_op.o client_rdma_op.o rdma_common.o rdma_two_sided_client_op.o rdma_two_sided_server_op.o common.o
-GPUOBJS=worker.o server_rdma_op.o client_rdma_op.o rdma_common.o rdma_two_sided_client_op.o rdma_two_sided_server_op.o common.o
 
-
+cuda_kernel_mf.o: cuda_kernel_mf.cu cuda_kernel_mf.h
+	nvcc -c cuda_kernel_mf.cu
+gpu_mf.o: gpu_mf.cu gpu_mf.h cuda_kernel_mf.h
+	nvcc -c gpu_mf.cu
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
 $(TARGET1): $(OBJS1)
@@ -27,7 +29,7 @@ test_send.o: test_send.cpp
 	$(CC) $(CFLAGS) -c test_send.cpp
 test_recv.o: test_recv.cpp
 	$(CC) $(CFLAGS) -c test_recv.cpp
-worker.o: worker.cpp
+worker.o: worker.cpp gpu_mf.h
 	$(CC) $(CFLAGS) -c worker.cpp
 ps.o: ps.cpp
 	$(CC) $(CFLAGS) -c ps.cpp

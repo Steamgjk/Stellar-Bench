@@ -32,6 +32,7 @@
 #include "mf_common.h"
 #include "rdma_two_sided_client_op.h"
 #include "rdma_two_sided_server_op.h"
+#include "gpu_mf.h"
 using namespace std;
 #define GROUP_NUM 1
 #define DIM_NUM 4
