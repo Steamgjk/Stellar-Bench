@@ -5,7 +5,7 @@
 //  Created by Jinkun Geng
 //  Copyright (c) 2016年 bikang. All rights reserved.
 //
-
+#include "gpu_mf.h"
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -29,7 +29,6 @@
 #include <sys/time.h>
 #include <map>
 #include "mf_common.h"
-#include "gpu_mf.h"
 #include "rdma_two_sided_client_op.h"
 #include "rdma_two_sided_server_op.h"
 using namespace std;
