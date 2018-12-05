@@ -30,8 +30,8 @@ test_send.o: test_send.cpp
 	$(CC) $(CFLAGS) -c test_send.cpp
 test_recv.o: test_recv.cpp
 	$(CC) $(CFLAGS) -c test_recv.cpp
-worker.o: worker.cpp
-	nvcc -c worker.cpp
+worker.o: worker.cu
+	nvcc -c -std=c++11 worker.cu
 ps.o: ps.cpp
 	$(CC) $(CFLAGS) -c ps.cpp
 server_rdma_op.o: server_rdma_op.cpp
