@@ -6,7 +6,7 @@ TARGET1 = worker
 TARGET2 = test_send
 TARGET3 = test_recv
 GPUTARGET = test_cu
-LIBS=-libverbs -lrdmacm -pthread -libverbs -lrdmacm
+LIBS=-libverbs -lrdmacm -pthread -libverbs -lrdmacm -lcudart -L/usr/local/cuda/lib64
 CFLAGS=-Wall -g -fpermissive -std=c++11
 OBJS=ps.o server_rdma_op.o client_rdma_op.o rdma_common.o rdma_two_sided_client_op.o rdma_two_sided_server_op.o common.o
 OBJS1=worker.o server_rdma_op.o client_rdma_op.o rdma_common.o rdma_two_sided_client_op.o rdma_two_sided_server_op.o common.o
@@ -30,7 +30,7 @@ test_send.o: test_send.cpp
 test_recv.o: test_recv.cpp
 	$(CC) $(CFLAGS) -c test_recv.cpp
 worker.o: worker.cpp gpu_mf.h
-	nvcc -c worker.cpp
+	$(CC) $(CFLAGS) -c worker.cpp
 ps.o: ps.cpp
 	$(CC) $(CFLAGS) -c ps.cpp
 server_rdma_op.o: server_rdma_op.cpp
