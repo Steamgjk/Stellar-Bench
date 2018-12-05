@@ -16,11 +16,11 @@ __global__ void cuda_mf(double *row_eles, double* col_eles, int dim, int row_hei
 			if(err == 0){
 				continue;
 			}
-			for(k = 0; k < dim, k++){
+			for(k = 0; k < dim; k++){
 				err -= row_eles[i*dim+k] * col_eles[j*dim+k];
 			}
 
-	        for (k = 0; k < K; ++k)
+	        for (k = 0; k < dim; ++k)
 	        {
 	        	row_eles[i*dim+k] += yita * (err * col_eles[j*dim+k] - theta * row_eles[i*dim+k]);
 
